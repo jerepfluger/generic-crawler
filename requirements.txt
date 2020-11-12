@@ -1,0 +1,8 @@
+flask==1.1.2
+requests==2.24.0
+selenium==3.14.1
+pyhocon==0.3.35
+psutil==5.4.2
+lru-dict==1.1.6
+ConcurrentLogHandler==0.9.1
+pylru==1.2.0

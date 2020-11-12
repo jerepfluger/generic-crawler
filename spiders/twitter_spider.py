@@ -6,12 +6,10 @@ class TwitterSpider(Spider):
         super(TwitterSpider, self).__init__(spider_name)
 
     def process_task(self, crawling, web_driver_pool):
-        driver = None
-
-        # proxy = {'proxy': 'no-proxy'}
         # proxy = self.get_proxy(crawling)
 
         driver = web_driver_pool.acquire(None, self._config.get('webdriver'))
-        return driver.get("http://www.google.com")
+        driver.get("http://www.twitter.com")
+        return
         # with open("testing.txt", 'w+') as file:
         #     file.write(data)
