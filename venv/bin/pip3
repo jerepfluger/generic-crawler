@@ -1,4 +1,4 @@
-#!/Users/jeremiaspfluger/Repos/Personal/GenericCrawler/venv/bin/python
+#!/Users/jeremiaspfluger/Repos/Personal/generic-crawler/venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
