@@ -17,4 +17,7 @@ def basic_twitter_crawler():
 
     logger.info('Processing search')  # TODO: Here I could set more particular info
     logger.info('Start Crawling stage...')
-    spider.start(crawling_data, twitter_webdriver)
+    try:
+        spider.start(crawling_data, twitter_webdriver)
+    finally:
+        spider.stop()
