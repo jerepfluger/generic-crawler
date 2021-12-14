@@ -5,7 +5,7 @@ from pylru import lrucache
 from selenium import webdriver
 from selenium.webdriver import ChromeOptions, FirefoxOptions
 
-import helpers.config as config_global
+from helpers import config as config_global
 from helpers.logger import logger
 
 
@@ -15,8 +15,11 @@ class ChromeWebdriver:
         logger.info("Creating Chromium Web Driver")
         options = ChromeOptions()
         options.binary_location = config.get_string('chrome-binary')
-        # options.add_argument('headless')
+        options.add_argument('headless')
         options.add_argument('hide-scrollbars')
+
+        options.add_argument("--remote-debugging-port=9222")  # this
+
         options.add_argument('disable-gpu')
         options.add_argument('no-sandbox')
         options.add_argument('data-path={}'.format(config.get_string('chromium.data-path')))
@@ -38,7 +41,7 @@ class FirefoxWebdriver:
 
         options = FirefoxOptions()
         options.binary_location = config.get_string('firefox-binary')
-        options.add_argument('--headless')
+        #options.add_argument('--headless')
         options.add_argument('--new_instance')
 
         firefox_profile = webdriver.FirefoxProfile()

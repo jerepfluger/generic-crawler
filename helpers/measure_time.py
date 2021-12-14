@@ -1,6 +1,6 @@
 import time
 
-import helpers.logger as log
+from helpers import logger as log
 
 
 def measure_time(method):

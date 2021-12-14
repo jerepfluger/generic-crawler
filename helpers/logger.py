@@ -14,7 +14,7 @@ from time import gmtime
 
 from cloghandler import ConcurrentRotatingFileHandler
 
-import helpers.config as config
+from helpers import config as config
 
 
 def rotate_handler(formatter):

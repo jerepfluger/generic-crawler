@@ -1,9 +1,11 @@
+from spiders.instagram_spider import InstagramSpider
 from spiders.twitter_spider import TwitterSpider
 
 
 class SpiderFactory:
     spiders = {
-        'twitter': TwitterSpider('twitter')
+        'twitter': TwitterSpider('twitter'),
+        'instagram': InstagramSpider('instagram')
     }
 
     @staticmethod
