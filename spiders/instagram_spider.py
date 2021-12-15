@@ -1,5 +1,11 @@
+import itertools
+
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.select import By
+
 
 from spiders.spider import Spider
 
@@ -9,41 +15,38 @@ class InstagramSpider(Spider):
         super(InstagramSpider, self).__init__(spider_name)
 
     def process_task(self, crawling, web_driver_pool):
-        # proxy = self.get_proxy(crawling)
-
         driver = web_driver_pool.acquire(None, self._config.get('webdriver'))
         driver.get("https://www.instagram.com/")
-        # TODO: I should set a wait here to make inputs reachable
+
+        # Waiting for login page to be fully loaded
+        WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, '//input[@name="username"]')))
         username_input = driver.find_element_by_xpath('//input[@name="username"]')
         username_input.send_keys(crawling['data']['username'])
         password_input = driver.find_element_by_xpath('//input[@name="password"]')
         password_input.send_keys(crawling['data']['password'])
         password_input.submit()
 
+        # Waiting for user to be fully logged in
+        WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, './/img[@data-testid="user-avatar"]')))
         driver.get("https://www.instagram.com/p/CXeJGaFlc7E/")
 
-        # # TODO: Before posting any comment there're two clicks
-        # finder = driver.find_element_by_xpath('//input[@placeholder="Buscar"]')
-        # finder.send_keys(crawling['data']['searched_account'])
-        #
-        # searched_account = driver.find_element_by_xpath('//a[@href="/{}/"]'.format(crawling['data']['searched_account']))
-        # searched_account.click()
-        #
-        # # TODO: Need to set a wait time here also
-        # desired_post = driver.find_element_by_xpath('//a[@href="/{}/"]'.format(crawling['data']['desired_post']))
-        # desired_post.click()
-        text_area = driver.find_element_by_xpath('//span[@class="_15y0l"]')
+        text_area = driver.find_element_by_xpath('//span[@class="_15y0l"]')  # Comment button
         text_area.click()
 
         comment_area = driver.switch_to.active_element
         if crawling['data']['tag']:
-            comment_area.send_keys('@')
-            comment_area.send_keys(crawling['data']['friend_tag'])
-            comment_area.send_keys(Keys.ARROW_DOWN)
-            comment_area.send_keys(Keys.ENTER)
-        comment_area.send_keys(crawling['data']['message'])
-        comment_area.submit()
+            for subset in itertools.combinations(crawling['data']['friends'], crawling['data']['tags_needed']):
+                comment_area.send_keys(' '.join(subset))
+                comment_area.send_keys(" ")
+                if crawling['data']['needs_message']:
+                    comment_area.send_keys(crawling['data']['message'])
+                comment_area.submit()
+                # Waiting for comment to be published
+                WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, './/button[@data-testid="post-comment-input-button"]')))
 
-        return
-        # with open("testing.txt", 'w+') as file:
-        #     file.write(data)
+        # if crawling['data']['needs_story']:
+        #     share_button = driver.find_element_by_xpath('//button[@class="wpO6b  "]')
+        #     share_button.click()
+        #     WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, './/div[@aria-label="Compartir"]')))
+        #     TODO: Here we should click the option that publishes this to our own story
+        #     TODO: After doing that, we should tag the account
