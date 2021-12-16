@@ -1,4 +1,5 @@
 import itertools
+import time
 
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.keys import Keys
@@ -30,19 +31,19 @@ class InstagramSpider(Spider):
         WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, './/img[@data-testid="user-avatar"]')))
         driver.get("https://www.instagram.com/p/CXeJGaFlc7E/")
 
-        text_area = driver.find_element_by_xpath('//span[@class="_15y0l"]')  # Comment button
-        text_area.click()
-
-        comment_area = driver.switch_to.active_element
         if crawling['data']['tag']:
             for subset in itertools.combinations(crawling['data']['friends'], crawling['data']['tags_needed']):
+                text_area = driver.find_element_by_xpath('//textarea[@data-testid="post-comment-text-area"]')  # Comment button
+                text_area.click()
+
+                comment_area = driver.switch_to.active_element
                 comment_area.send_keys(' '.join(subset))
                 comment_area.send_keys(" ")
                 if crawling['data']['needs_message']:
                     comment_area.send_keys(crawling['data']['message'])
                 comment_area.submit()
                 # Waiting for comment to be published
-                WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, './/button[@data-testid="post-comment-input-button"]')))
+                WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, '//textarea[@data-testid="post-comment-text-area"]')))
 
         # if crawling['data']['needs_story']:
         #     share_button = driver.find_element_by_xpath('//button[@class="wpO6b  "]')

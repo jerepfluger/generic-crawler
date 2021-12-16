@@ -15,7 +15,7 @@ class ChromeWebdriver:
         logger.info("Creating Chromium Web Driver")
         options = ChromeOptions()
         options.binary_location = config.get_string('chrome-binary')
-        options.add_argument('headless')
+        # options.add_argument('headless')
         options.add_argument('hide-scrollbars')
 
         options.add_argument("--remote-debugging-port=9222")  # this
