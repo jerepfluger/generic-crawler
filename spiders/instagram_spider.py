@@ -31,7 +31,7 @@ class InstagramSpider(Spider):
         WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, './/img[@data-testid="user-avatar"]')))
         driver.get("https://www.instagram.com/p/CXeJGaFlc7E/")
 
-        if crawling['data']['tag']:
+        if crawling['data']['needs_tagging']:
             for subset in itertools.combinations(crawling['data']['friends'], crawling['data']['tags_needed']):
                 text_area = driver.find_element_by_xpath('//textarea[@data-testid="post-comment-text-area"]')  # Comment button
                 text_area.click()
@@ -45,9 +45,15 @@ class InstagramSpider(Spider):
                 # Waiting for comment to be published
                 WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, '//textarea[@data-testid="post-comment-text-area"]')))
 
-        # if crawling['data']['needs_story']:
+        # if crawling['data']['needs_post_story']:
         #     share_button = driver.find_element_by_xpath('//button[@class="wpO6b  "]')
         #     share_button.click()
         #     WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, './/div[@aria-label="Compartir"]')))
         #     TODO: Here we should click the option that publishes this to our own story
         #     TODO: After doing that, we should tag the account
+
+        if crawling['data']['needs_like']:
+            like_button = driver.find_element_by_xpath('//span[@class="fr66n"]//*[name()="svg"]')  # Like button
+            like_state = like_button.get_attribute('aria-label')
+            if like_state == 'Like':
+                like_button.click()

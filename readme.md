@@ -14,3 +14,7 @@ Place download in /usr/local/bin/ (make sure /usr/local/bin is in your PATH [che
 For running with chrome you'll need to install chromium -> ´brew install --cask eloston-chromium´. This will download chromium version 96 
 For downloading the chromedriver that you need for running chrome head to -> https://chromedriver.storage.googleapis.com/index.html?path=96.0.4664.45/
 chromedriver 96 goes along with chromium 96 version. Otherwise it'll crash
+
+HELPERS
+For checking xpath in browser use $x(<expression>)
+For checking css selector in browser use $$(<expresion>)
