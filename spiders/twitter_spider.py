@@ -1,5 +1,6 @@
-from selenium.webdriver import ActionChains
-from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.select import By
 
 from spiders.spider import Spider
 
@@ -13,18 +14,23 @@ class TwitterSpider(Spider):
 
         driver = web_driver_pool.acquire(None, self._config.get('webdriver'))
         driver.get("http://www.twitter.com")
+
+        WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, '//a[@data-testid="loginButton"]')))
         login_button = driver.find_element_by_xpath('//a[@data-testid="loginButton"]')
         login_button.click()
-        username_input = driver.find_element_by_xpath('//input[@name="session[username_or_email]"]')
+        WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, '//input[@autocomplete="username"]')))
+        username_input = driver.find_element_by_xpath('//input[@autocomplete="username"]')
         username_input.send_keys(crawling['data']['username'])
-        password_input = driver.find_element_by_xpath('//input[@name="session[password]"]')
+        username_input.submit()
+
+        WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, '//input[@autocomplete="current-password"]')))
+        password_input = driver.find_element_by_xpath('//input[@autocomplete="current-password"]')
         password_input.send_keys(crawling['data']['password'])
         password_input.submit()
 
         tweet_text = driver.find_element_by_xpath('//br[@data-text="true"]')
         tweet_text.send_keys(crawling['data']['tweet'])
-        tweet_button = driver.find_element_by_xpath('//div[@data-testid="tweetButtonInline"]/div/span/span')
-        tweet_button.click()
+        tweet_text.submit()
 
         return
         # with open("testing.txt", 'w+') as file:

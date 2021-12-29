@@ -41,8 +41,10 @@ def console_handler(formatter):
 
 
 def get_logger(logger_name, log_level):
-    formatter = logging.Formatter('%(asctime)s.%(msecs)03dZ|%(levelname)s|%(threadName)s|%(uow)s|%(x-request-id)s|'
-                                  '%(hostname)s|USER-AGENT|%(x-forwarded-for)s|%(message)s',
+    # formatter = logging.Formatter('%(asctime)s.%(msecs)03dZ|%(levelname)s|%(threadName)s|%(uow)s|%(x-request-id)s|'
+    #                               '%(hostname)s|USER-AGENT|%(x-forwarded-for)s|%(message)s',
+    #                               datefmt='%Y-%m-%dT%H:%M:%S')
+    formatter = logging.Formatter('%(asctime)s.%(msecs)03dZ|%(levelname)s|%(uow)s|%(hostname)s|%(message)s',
                                   datefmt='%Y-%m-%dT%H:%M:%S')
     formatter.converter = gmtime
     new_logger = logging.getLogger(logger_name)
@@ -67,10 +69,8 @@ def refresh_uow():
 
 
 uow = str(uuid.uuid4())
-# FIXME: el campo x-forwarded-for deberia tener la ip de la maquina
 __extra = {'uow': uow,
            'hostname': socket.gethostname(),
-           'x-forwarded-for': socket.gethostname(),
            'x-request-id': str(uuid.uuid4())
            }
 

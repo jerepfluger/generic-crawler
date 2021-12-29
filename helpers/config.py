@@ -24,9 +24,6 @@ CONFIG_DIR = __config_args[0] if len(__config_args) > 0 else None
 # if the application is running inside docker
 # we mount host's ~/app into container's /env to read environment-override.conf
 
-
-# TODO: this should tell whether we're running in docker or not
-# ENV_DIR = "/env" if running_in_docker() else BASE_DIR
 ENV_DIR = BASE_DIR
 
 
