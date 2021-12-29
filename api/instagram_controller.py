@@ -3,7 +3,7 @@ import json
 from flask import request
 from flask import Response as FlaskResponse
 
-from entities.response import Response as EntityResponse
+from request.response import Response as EntityResponse
 from helpers.logger import refresh_uow, logger
 from spiders.spider_factory import SpiderFactory
 from webdrivers.webdriver import WebDriver

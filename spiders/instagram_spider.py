@@ -4,16 +4,16 @@ import time
 
 from selenium.common.exceptions import NoSuchElementException
 
-from entities.response import Response
+from request.response import Response
 from helpers.logger import logger
 
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import By
 
-
 from spiders.spider import Spider
 
+# TODO: This could be in config
 INSTAGRAM_URL = "https://www.instagram.com/"
 
 emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '🥲', '☺️', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰',
@@ -29,70 +29,116 @@ class InstagramSpider(Spider):
         driver.get(INSTAGRAM_URL)
 
         # Waiting for login page to be fully loaded
-        WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, '//input[@name="username"]')))
-        username_input = driver.find_element_by_xpath('//input[@name="username"]')
-        username_input.send_keys(crawling['data']['username'])
-        password_input = driver.find_element_by_xpath('//input[@name="password"]')
-        password_input.send_keys(crawling['data']['password'])
-        password_input.submit()
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located((By.XPATH, self._config.get('html_location.username_input'))))
+        self._login(driver, crawling)
 
-        # Waiting for user to be fully logged in
-        WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, './/img[@data-testid="user-avatar"]')))
+        # Waiting for user to be fully logged in and redirecting to
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located((By.XPATH, self._config.get('html_location.user_avatar'))))
         driver.get("{}{}".format(INSTAGRAM_URL, crawling['data']['desired_post']))
 
         if crawling['data']['needs_tagging']:
-            subset_count = 0
-            for subset in itertools.combinations(crawling['data']['friends'], crawling['data']['tags_needed']):
-                comment_button = driver.find_element_by_xpath('//span[@class="_15y0l"]/button')  # Comment button
-                comment_button.click()
-
-                comment_area = driver.switch_to.active_element
-                comment_area.send_keys(' '.join(subset))
-                time.sleep(3)
-                comment_area.send_keys(" ")
-                comment_area.send_keys(random.choice(emojis))
-                if crawling['data']['needs_message']:
-                    comment_area.send_keys(crawling['data']['message'])
-
-                post_button = driver.find_element_by_xpath('//button[@type="submit"]')
-                post_button.click()
-                time.sleep(1)
-
-                try:
-                    driver.find_element_by_xpath('//div[@class="JBIyP"]')
-                    logger.error('Last element able to be posted was -> {}'.format(subset))
-                    logger.error('From a total of {}/{} and this represent the {} percentage'.format(subset_count, len(crawling['data']['friends']), subset_count * 100 / len(crawling['data']['friends'])))
-                    # TODO: Aca posiblemente podes hacer un sleep mas largo en caso de fallo y poner un timeout a los X reintentos
-                    # TODO: Otra opcion sería hacer un skip de la cuenta que estamos por taggear, pero esa logica seria un poco mas rebuscada
-                    return Response('EL PROCEDIMIENTO TERMINO DEFECTUOSAMENTE!', 429)
-                except NoSuchElementException:
-                    subset_count += 1
-                    logger.info('Successfully commented %s/%s with tags %s and message %s', subset_count, len(crawling['data']['friends']), subset, crawling['data']['message'])
-                    pass
-
-                # Waiting for comment to be published
-                WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, '//textarea[@data-testid="post-comment-text-area"]')))
-
-                time.sleep(40)
-
-        # if crawling['data']['needs_post_story']:
-        #     share_button = driver.find_element_by_xpath('//button[@class="wpO6b  "]')
-        #     share_button.click()
-        #     WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, './/div[@aria-label="Compartir"]')))
-        #     TODO: Here we should click the option that publishes this to our own story
-        #     TODO: After doing that, we should tag the account
-        #     TODO: THIS OPTION IS NOT YET AVAILABLE!
+            self._tag_friends(driver, crawling)
 
         if crawling['data']['needs_follow']:
-            follow_button = driver.find_element_by_xpath('//button[text()="Follow"]')
-            follow_button.click()
-            logger.info('Successfully Following the account')
+            self._follow_account(driver)
 
         if crawling['data']['needs_like']:
-            like_button = driver.find_element_by_xpath('//span[@class="fr66n"]//*[name()="svg"]')  # Like button
+            self._like_post(driver)
+
+        if crawling['data']['needs_post_story']:
+            self._post_to_story(driver)
+
+        return Response('Procedure ended up successfully!', 200)
+
+    def _login(self, driver, crawling):
+        username_input = driver.find_element_by_xpath(self._config.get('html_location.username_input'))
+        username_input.send_keys(crawling['data']['username'])
+
+        password_input = driver.find_element_by_xpath(self._config.get('html_location.password_input'))
+        password_input.send_keys(crawling['data']['password'])
+
+        password_input.submit()
+
+    def _tag_friends(self, driver, crawling):
+        subset_count = 0
+        combinations_array = itertools.combinations(crawling['data']['friends'], crawling['data']['tags_needed'])
+        combinations_array_length = len(list(combinations_array))
+
+        for subset in combinations_array:
+            comment_button = driver.find_element_by_xpath(self._config.get('html_location.comment_button'))
+            comment_button.click()
+
+            comment_area = driver.switch_to.active_element
+            comment_area.send_keys(' '.join(subset))
+            time.sleep(3)
+            comment_area.send_keys(" ")
+            comment_area.send_keys(random.choice(emojis))
+            if crawling['data']['needs_message']:
+                comment_area.send_keys(crawling['data']['message'])
+
+            post_button = driver.find_element_by_xpath(self._config.get('html_location.submit_button'))
+            post_button.click()
+            time.sleep(1)
+
+            try:
+                driver.find_element_by_xpath(self._config.get('html_location.blocked_banner'))
+                logger.error('Last element able to be posted was -> {}'.format(subset))
+                logger.error('From a total of {}/{} and this represent the {} percentage'.format(subset_count,
+                                                                                                 combinations_array_length,
+                                                                                                 subset_count * 100 / combinations_array_length))
+                # Aca posiblemente podes hacer un sleep mas largo en caso de fallo y poner un timeout a los X reintentos
+                # Otra opcion sería hacer un skip de la cuenta que estamos por taggear, pero esa logica seria un poco mas rebuscada
+                return Response('Procedure ended up with ERRORS!', 429)
+            except NoSuchElementException:
+                subset_count += 1
+                logger.info('Successfully commented %s/%s with tags %s and message %s', subset_count,
+                            combinations_array_length, subset, crawling['data']['message'])
+                pass
+
+            # Waiting for comment to be published
+            WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.XPATH, self._config.get('html_location.text_area'))))
+
+            if subset_count < combinations_array_length:
+                time.sleep(40)
+
+    def _follow_account(self, driver):
+        if not self._already_following(driver):
+            try:
+                follow_button = driver.find_element_by_xpath(self._config.get('html_location.follow_button'))
+                follow_button.click()
+                logger.info('Successfully Following the account')
+            except NoSuchElementException:
+                logger.error('Unable to locate Follow button')
+
+    def _already_following(self, driver):
+        try:
+            driver.find_element_by_xpath(self._config.get('html_location.unfollow_button'))
+        except NoSuchElementException:
+            logger.info('Already following account')
+            return True
+
+        return False
+
+    def _like_post(self, driver):
+        try:
+            like_button = driver.find_element_by_xpath(self._config.get('html_location.like_button'))  # Like button
             like_state = like_button.get_attribute('aria-label')
-            if like_state == 'Like':
+            if like_state == 'Like' or like_state == 'Me gusta':
                 like_button.click()
                 logger.info('Successfully liked the post')
+            elif like_state == 'Unlike' or like_state == 'Ya no me gusta':
+                logger.info('Still OK. Already liked post')
+        except NoSuchElementException:
+            logger.error('Unable to locate Like button')
+            pass
 
-        return Response('EL PROCEDIMIENTO TERMINO EXITOSAMENTE!', 200)
+    def _post_to_story(self, driver):
+        # share_button = driver.find_element_by_xpath('//button[@class="wpO6b  "]')
+        # share_button.click()
+        # WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, './/div[@aria-label="Compartir"]')))
+        # TODO: Here we should click the option that publishes this to our own story. After doing that, we should tag the account
+
+        pass  # THIS OPTION IS NOT YET AVAILABLE!
