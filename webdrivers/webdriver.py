@@ -38,7 +38,7 @@ class FirefoxWebdriver:
 
         options = FirefoxOptions()
         options.binary_location = config.get_string('firefox-binary')
-        # options.add_argument('--headless')
+        options.add_argument('--headless')
         options.add_argument('--new_instance')
 
         firefox_profile = webdriver.FirefoxProfile()
