@@ -13,8 +13,6 @@ from selenium.webdriver.support.select import By
 
 from spiders.spider import Spider
 
-# TODO: This could be in config
-INSTAGRAM_URL = "https://www.instagram.com/"
 
 emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '🥲', '☺️', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰',
           '😘', '😗', '😙', '😚', '😋', '😛']
@@ -26,7 +24,8 @@ class InstagramSpider(Spider):
 
     def process_task(self, crawling, web_driver_pool):
         driver = web_driver_pool.acquire(None, self._config.get('webdriver'))
-        driver.get(INSTAGRAM_URL)
+        # Go to instagram website
+        driver.get(self._config.get('base_url'))
 
         # Waiting for login page to be fully loaded
         WebDriverWait(driver, 5).until(
@@ -36,7 +35,7 @@ class InstagramSpider(Spider):
         # Waiting for user to be fully logged in and redirecting to
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located((By.XPATH, self._config.get('html_location.user_avatar'))))
-        driver.get("{}{}".format(INSTAGRAM_URL, crawling['data']['desired_post']))
+        driver.get("{}{}".format(self._config.get('base_url'), crawling['data']['desired_post']))
 
         if crawling['data']['needs_tagging']:
             self._tag_friends(driver, crawling)
