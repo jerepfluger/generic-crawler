@@ -67,6 +67,12 @@ class InstagramSpider(Spider):
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located((By.XPATH, self._config.get('html_location.username_input'))))
         self._login(driver, crawling)
+        try:
+            driver.find_element_by_id("slfErrorAlert")
+            logger.error("Will take a nap for 30 sec and try again. Hope it works")
+            self._login(driver, crawling)
+        except NoSuchElementException:
+            pass
 
         # Waiting for user to be fully logged in and redirecting to
         WebDriverWait(driver, 5).until(
@@ -118,7 +124,7 @@ class InstagramSpider(Spider):
 
             try:
                 driver.find_element_by_xpath(self._config.get('html_location.blocked_banner'))
-                logger.error('Last element able to be posted was -> {}'.format(subset))
+                logger.error('Last element unable to be posted was -> {}'.format(subset))
                 logger.error('From a total of {}/{} and this represent the {} percentage'.format(subset_count,
                                                                                                  len(combinations_array),
                                                                                                  subset_count * 100 / len(combinations_array)))
@@ -141,32 +147,29 @@ class InstagramSpider(Spider):
                 logger.info('Already running for 5 hours. Seems comments enough by this time')
 
     def _follow_account(self, driver):
-        if not self._already_following(driver):
-            try:
-                follow_button = driver.find_element_by_xpath(self._config.get('html_location.follow_button'))
-                follow_button.click()
-                logger.info('Successfully Following the account')
-            except NoSuchElementException:
-                logger.error('Unable to locate Follow button')
-
-    def _already_following(self, driver):
         try:
-            driver.find_element_by_xpath(self._config.get('html_location.unfollow_button'))
+            follow_button = driver.find_element_by_xpath(self._config.get('html_location.follow_button'))
+            follow_button.click()
+            logger.info('Successfully Following the account')
         except NoSuchElementException:
-            logger.info('Already following account')
-            return True
-
-        return False
+            logger.info('Unable to locate Follow button. Searching if already following account')
+            try:
+                driver.find_element_by_xpath(self._config.get('html_location.unfollow_button'))
+                logger.info('Already following account')
+            except NoSuchElementException:
+                logger.error('Unable to locate Follow/Unfollow button. xpath seems to be corrupted')
 
     def _like_post(self, driver):
         try:
-            like_button = driver.find_element_by_xpath(self._config.get('html_location.like_button'))  # Like button
-            like_state = like_button.get_attribute('aria-label')
+            like_state = driver.find_element_by_xpath(self._config.get('html_location.like_state')).get_attribute('aria-label')
             if like_state == 'Like' or like_state == 'Me gusta':
+                like_button = driver.find_element_by_xpath(self._config.get('html_location.like_button'))  # Like button
                 like_button.click()
                 logger.info('Successfully liked the post')
             elif like_state == 'Unlike' or like_state == 'Ya no me gusta':
-                logger.info('Still OK. Already liked post')
+                logger.info('Already liked post')
+            else:
+                logger.error("No idea what could be going on in here")
         except NoSuchElementException:
             logger.error('Unable to locate Like button')
             pass
