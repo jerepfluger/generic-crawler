@@ -18,3 +18,4 @@ chromedriver 96 goes along with chromium 96 version. Otherwise it'll crash
 HELPERS
 For checking xpath in browser use $x(<expression>)
 For checking css selector in browser use $$(<expresion>)
+Firefox v66 on https://ftp.mozilla.org/pub/firefox/releases/66.0.3/mac/es-AR/

@@ -38,7 +38,7 @@ class FirefoxWebdriver:
 
         options = FirefoxOptions()
         options.binary_location = config.get_string('firefox-binary')
-        # options.add_argument('--headless')
+        options.add_argument('--headless')
         options.add_argument('--new_instance')
 
         firefox_profile = webdriver.FirefoxProfile()
@@ -75,7 +75,7 @@ class FirefoxWebdriver:
             return webdriver.Firefox(firefox_profile=firefox_profile, firefox_options=options, log_path="/dev/null",
                                      capabilities=firefox_capabilities)
 
-        return webdriver.Firefox(firefox_profile=firefox_profile, firefox_options=options, log_path="/dev/null")
+        return webdriver.Firefox(firefox_profile=firefox_profile, firefox_options=options, log_path="/dev/null", service_log_path="/dev/null")
 
 
 class WebDriver:

@@ -4,6 +4,7 @@ import time
 
 from selenium.common.exceptions import NoSuchElementException
 
+from exceptions.exceptions import NonExistentCombinationsException
 from request.response import Response
 from helpers.logger import logger
 
@@ -18,6 +19,39 @@ INSTAGRAM_URL = "https://www.instagram.com/"
 
 emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '🥲', '☺️', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰',
           '😘', '😗', '😙', '😚', '😋', '😛']
+
+
+def _two_tags_combination(tags):
+    result = []
+    for i in range(len(tags) - 1):
+        result.append([tags[i], tags[i + 1]])
+        if i + 2 < len(tags):
+            result.append([tags[i], tags[i + 2]])
+    result.append([tags[0], tags[-1]])
+
+    return result
+
+
+def _three_tags_combination(tags):
+    result = []
+    for i in range(len(tags) - 2):
+        result.append([tags[i], tags[i + 1], tags[i + 2]])
+        if i + 3 < len(tags) - 1:
+            result.append([tags[i], tags[i + 2], tags[i + 3]])
+        result.append([tags[0], tags[-1], tags[-2]])
+
+    return result
+
+
+def _create_combinations(tags, tags_amount):
+    if tags_amount == 1:
+        return tags
+    if tags_amount == 2:
+        return _two_tags_combination(tags)
+    if tags_amount == 3:
+        return _three_tags_combination(tags)
+
+    raise NonExistentCombinationsException('There\'s no algorithm created for {} tags combinatory'.format(tags_amount))
 
 
 class InstagramSpider(Spider):
@@ -64,18 +98,17 @@ class InstagramSpider(Spider):
 
     def _tag_friends(self, driver, crawling):
         subset_count = 0
-        combinations_array = list(itertools.combinations(crawling['data']['friends'], crawling['data']['tags_needed']))
+        combinations_array = _create_combinations(crawling['data']['friends'], crawling['data']['tags_needed'])
 
         for subset in combinations_array:
-            comment_button = driver.find_element_by_xpath(".//span[@class='_15y0l']/button")
-            # comment_button = driver.find_element_by_xpath(self._config.get('html_location.comment_button'))
+            comment_button = driver.find_element_by_xpath(self._config.get('html_location.comment_button'))
             comment_button.click()
-
+            # driver.find_element_by_xpath(self._config.get('html_location.text_area')).click()
             comment_area = driver.switch_to.active_element
             comment_area.send_keys(' '.join(subset))
             time.sleep(3)
             comment_area.send_keys(" ")
-            comment_area.send_keys(random.choice(emojis))
+            # comment_area.send_keys(random.choice(emojis))
             if crawling['data']['needs_message']:
                 comment_area.send_keys(crawling['data']['message'])
 

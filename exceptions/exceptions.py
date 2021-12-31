@@ -31,3 +31,8 @@ class TimeoutProxyException(ProxyException):
         self.name = "TimeoutProxyException"
         self.message = "Timeout given proxy is too slow to load webpage"
         self.proxy = proxy
+
+
+class NonExistentCombinationsException(Exception):
+    def __init__(self, message):
+        self.message = message
