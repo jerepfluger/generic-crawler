@@ -19,3 +19,13 @@ HELPERS
 For checking xpath in browser use $x(<expression>)
 For checking css selector in browser use $$(<expresion>)
 Firefox v66 on https://ftp.mozilla.org/pub/firefox/releases/66.0.3/mac/es-AR/
+
+
+Installing MySQL
+In MacOS:
+    `brew install mysql` -- install driver
+    `brew services start mysql` -- start mysql service
+    `mysql_secure_installation` -- start service, passwords, users
+
+For checking HTTPRequest after posting a comment refer to
+https://stackoverflow.com/questions/27644615/getting-chrome-performance-and-tracing-logs/27644635#27644635
