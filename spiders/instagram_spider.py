@@ -68,10 +68,11 @@ def _create_combinations(tags, tags_amount):
 
 def _takescreenshot(driver):
     route_to_folder = '{}/{}'.format(Path.home(), 'Repos/python/generic-crawler/screenshots/')
+    screenshot_time = datetime.now().strftime("%Y:%m:%d %H:%m:%S")
     if not os.path.exists(route_to_folder):
         os.mkdir(route_to_folder)
-    driver.get_screenshot_as_png('{}/screenshot-{}.png', route_to_folder,
-                                 datetime.now().strftime("%Y:%m:%d %H:%m:%S"))
+    driver.save_screenshot('{}/screenshot-{}.png'.format(route_to_folder, screenshot_time))
+    logger.info('Screenshot saved in {}/{}'.format(route_to_folder, screenshot_time))
 
 
 class InstagramSpider(Spider):
@@ -155,7 +156,7 @@ class InstagramSpider(Spider):
 
             post_button = driver.find_element_by_xpath(self._config.get('html_location.submit_button'))
             post_button.click()
-            time.sleep(1)
+            time.sleep(1.5)
 
             try:
                 driver.find_element_by_xpath(self._config.get('html_location.blocked_banner'))

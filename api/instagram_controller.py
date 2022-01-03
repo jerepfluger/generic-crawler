@@ -26,4 +26,4 @@ def basic_instagram_crawler():
         result = EntityResponse(str(ex), 500)
     finally:
         spider.stop()
-        return FlaskResponse(json.dumps(result.__dict__), status=result.status, mimetype='application/json')
+        return FlaskResponse(json.dumps(result, default=lambda o: o.__dict__), status=result.status, mimetype='application/json')
