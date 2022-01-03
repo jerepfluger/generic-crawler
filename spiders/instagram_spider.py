@@ -1,19 +1,18 @@
-import itertools
 import random
 import time
-
-from selenium.common.exceptions import NoSuchElementException
+import os
+from datetime import datetime
 
 from exceptions.exceptions import NonExistentCombinationsException
-from request.response import Response
+from request.response import Response, InstagramDetailedResponse
 from helpers.logger import logger
+from spiders.spider import Spider
 
+from pathlib import Path
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import By
-
-from spiders.spider import Spider
-
 
 INSTAGRAM_URL = "https://www.instagram.com/"
 
@@ -43,6 +42,17 @@ def _three_tags_combination(tags):
     return result
 
 
+def _five_tags_combination(tags):
+    result = []
+    for i in range(len(tags) - 4):
+        result.append([tags[i], tags[i + 1], tags[i + 2], tags[i + 3], tags[i + 4]])
+        if i + 5 < len(tags) - 3:
+            result.append([tags[i], tags[i + 2], tags[i + 3], tags[i + 4], tags[i + 5]])
+        result.append([tags[0], tags[-1], tags[-2]])
+
+    return result
+
+
 def _create_combinations(tags, tags_amount):
     if tags_amount == 1:
         return tags
@@ -50,8 +60,18 @@ def _create_combinations(tags, tags_amount):
         return _two_tags_combination(tags)
     if tags_amount == 3:
         return _three_tags_combination(tags)
+    if tags_amount == 5:
+        return _five_tags_combination(tags)
 
     raise NonExistentCombinationsException('There\'s no algorithm created for {} tags combinatory'.format(tags_amount))
+
+
+def _takescreenshot(driver):
+    route_to_folder = '{}/{}'.format(Path.home(), 'Repos/python/generic-crawler/screenshots/')
+    if not os.path.exists(route_to_folder):
+        os.mkdir(route_to_folder)
+    driver.get_screenshot_as_png('{}/screenshot-{}.png', route_to_folder,
+                                 datetime.now().strftime("%Y:%m:%d %H:%m:%S"))
 
 
 class InstagramSpider(Spider):
@@ -79,19 +99,32 @@ class InstagramSpider(Spider):
             EC.visibility_of_element_located((By.XPATH, self._config.get('html_location.user_avatar'))))
         driver.get("{}{}".format(INSTAGRAM_URL, crawling['data']['desired_post']))
 
+        tagging_response = None
         if crawling['data']['needs_tagging']:
-            self._tag_friends(driver, crawling)
+            try:
+                tagging_response = self._tag_friends(driver, crawling)
+            except Exception as ex:
+                _takescreenshot(driver)
+                tagging_response = Response(str(ex), 500)
 
+        follow_response = None
         if crawling['data']['needs_follow']:
-            self._follow_account(driver)
+            try:
+                follow_response = self._follow_account(driver)
+            except Exception as ex:
+                follow_response = Response(str(ex), 500)
 
+        like_response = None
         if crawling['data']['needs_like']:
-            self._like_post(driver)
+            try:
+                like_response = self._like_post(driver)
+            except Exception as ex:
+                like_response = Response(str(ex), 500)
 
         if crawling['data']['needs_post_story']:
             self._post_to_story(driver)
 
-        return Response('Procedure ended up successfully!', 200)
+        return InstagramDetailedResponse(tagging_response, follow_response, like_response, 200)
 
     def _login(self, driver, crawling):
         username_input = driver.find_element_by_xpath(self._config.get('html_location.username_input'))
@@ -114,9 +147,11 @@ class InstagramSpider(Spider):
             comment_area.send_keys(' '.join(subset))
             time.sleep(3)
             comment_area.send_keys(" ")
-            # comment_area.send_keys(random.choice(emojis))
+
             if crawling['data']['needs_message']:
                 comment_area.send_keys(crawling['data']['message'])
+            elif self._config.get('webdriver') != 'chromium':
+                comment_area.send_keys(random.choice(emojis))
 
             post_button = driver.find_element_by_xpath(self._config.get('html_location.submit_button'))
             post_button.click()
@@ -124,10 +159,12 @@ class InstagramSpider(Spider):
 
             try:
                 driver.find_element_by_xpath(self._config.get('html_location.blocked_banner'))
+                _takescreenshot(driver)
                 logger.error('Last element unable to be posted was -> {}'.format(subset))
                 logger.error('From a total of {}/{} and this represent the {} percentage'.format(subset_count,
                                                                                                  len(combinations_array),
-                                                                                                 subset_count * 100 / len(combinations_array)))
+                                                                                                 subset_count * 100 / len(
+                                                                                                     combinations_array)))
                 # Aca posiblemente podes hacer un sleep mas largo en caso de fallo y poner un timeout a los X reintentos
                 # Otra opcion sería hacer un skip de la cuenta que estamos por taggear, pero esa logica seria un poco mas rebuscada
                 return Response('Procedure ended up with ERRORS!', 429)
@@ -159,9 +196,12 @@ class InstagramSpider(Spider):
             except NoSuchElementException:
                 logger.error('Unable to locate Follow/Unfollow button. xpath seems to be corrupted')
 
+        return Response('Successfully Following the account', 200)
+
     def _like_post(self, driver):
         try:
-            like_state = driver.find_element_by_xpath(self._config.get('html_location.like_state')).get_attribute('aria-label')
+            like_state = driver.find_element_by_xpath(self._config.get('html_location.like_state')).get_attribute(
+                'aria-label')
             if like_state == 'Like' or like_state == 'Me gusta':
                 like_button = driver.find_element_by_xpath(self._config.get('html_location.like_button'))  # Like button
                 like_button.click()
@@ -170,9 +210,12 @@ class InstagramSpider(Spider):
                 logger.info('Already liked post')
             else:
                 logger.error("No idea what could be going on in here")
+                return Response('Unable to like post', 404)
         except NoSuchElementException:
             logger.error('Unable to locate Like button')
-            pass
+            return Response('Unable to like post', 404)
+
+        return Response('Successfully liked post', 200)
 
     def _post_to_story(self, driver):
         # share_button = driver.find_element_by_xpath('//button[@class="wpO6b  "]')
