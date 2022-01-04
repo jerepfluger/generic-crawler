@@ -75,16 +75,14 @@ class FirefoxWebdriver:
             return webdriver.Firefox(firefox_profile=firefox_profile, firefox_options=options, log_path="/dev/null",
                                      capabilities=firefox_capabilities)
 
-        return webdriver.Firefox(firefox_profile=firefox_profile, firefox_options=options, log_path="/dev/null", service_log_path="/dev/null")
+        return webdriver.Firefox(firefox_profile=firefox_profile, firefox_options=options, log_path="/dev/null",
+                                 service_log_path="/dev/null")
 
 
 class WebDriver:
-    FIREFOX = 'firefox'
-    CHROMIUM = 'chromium'
-
     web_driver_creators = {
-        FIREFOX: FirefoxWebdriver.create,
-        CHROMIUM: ChromeWebdriver.create
+        'firefox': FirefoxWebdriver.create,
+        'chromium': ChromeWebdriver.create
     }
 
     def __init__(self, config=config_global.conf.get_config('web-driver')):
