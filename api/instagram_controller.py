@@ -17,7 +17,6 @@ def basic_instagram_crawler():
     refresh_uow()
     spider = SpiderFactory.choose('instagram')
 
-    logger.info('Processing search')  # TODO: Here I could set more particular info
     logger.info('Start Crawling stage...')
     result = None
     try:
