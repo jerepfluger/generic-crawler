@@ -1,19 +1,19 @@
+import os
 import random
 import time
-import os
 from datetime import datetime
-
-from exceptions.exceptions import NonExistentCombinationsException
-from repositories.instagram_crawling_repository import InstagramCrawlingRepository
-from request.response import Response, InstagramDetailedResponse
-from helpers.logger import logger
-from spiders.spider import Spider
-
 from pathlib import Path
+
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import By
+from selenium.webdriver.support.wait import WebDriverWait
+
+from exceptions.exceptions import NonExistentCombinationsException
+from helpers.logger import logger
+from repositories.instagram_crawling_repository import InstagramCrawlingRepository
+from request.response import Response, InstagramDetailedResponse
+from spiders.spider import Spider
 
 emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '🥲', '☺️', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰',
           '😘', '😗', '😙', '😚', '😋', '😛']
@@ -71,7 +71,7 @@ def _takescreenshot(driver):
     if not os.path.exists(route_to_folder):
         os.mkdir(route_to_folder)
     driver.save_screenshot('{}/screenshot-{}.png'.format(route_to_folder, screenshot_time))
-    logger.info('Screenshot saved in {}/{}'.format(route_to_folder, screenshot_time))
+    logger.info('Screenshot saved in %s/%s', route_to_folder, screenshot_time)
 
 
 def _save_instagram_record(crawling, tagging_count, percentage):
@@ -93,12 +93,6 @@ class InstagramSpider(Spider):
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located((By.XPATH, self._config.get('html_location.username_input'))))
         self._login(driver, crawling)
-        try:
-            driver.find_element_by_id("slfErrorAlert")
-            logger.error("Will take a nap for 30 sec and try again. Hope it works")
-            self._login(driver, crawling)
-        except NoSuchElementException:
-            pass
 
         # Waiting for user to be fully logged in and redirecting to
         WebDriverWait(driver, 5).until(
@@ -133,13 +127,23 @@ class InstagramSpider(Spider):
         return InstagramDetailedResponse(tagging_response, follow_response, like_response, 200)
 
     def _login(self, driver, crawling):
+        control = self.complete_login_data(crawling, driver)
+        control.submit()
+        try:
+            driver.find_element_by_id("slfErrorAlert")
+            logger.error("Will take a nap for 30 sec and try again. Hope it works")
+            time.sleep(30)
+            control = self.complete_login_data(crawling, driver)
+            control.submit()
+        except NoSuchElementException:
+            pass
+
+    def complete_login_data(self, crawling, driver):
         username_input = driver.find_element_by_xpath(self._config.get('html_location.username_input'))
         username_input.send_keys(crawling['data']['username'])
-
         password_input = driver.find_element_by_xpath(self._config.get('html_location.password_input'))
         password_input.send_keys(crawling['data']['password'])
-
-        password_input.submit()
+        return password_input
 
     def _tag_friends(self, driver, crawling):
         subset_count = 0
@@ -168,8 +172,8 @@ class InstagramSpider(Spider):
                 _takescreenshot(driver)
                 tagging_count = '{}/{}'.format(subset_count, len(combinations_array))
                 percentage = subset_count * 100 / len(combinations_array)
-                logger.error('Last element unable to be posted was -> {}'.format(subset))
-                logger.error('From a total of {} and this represent the {} percentage'.format(tagging_count, percentage))
+                logger.error('Last element unable to be posted was -> %s', subset)
+                logger.error('From a total of %s and this represent the %s percentage', tagging_count, percentage)
 
                 _save_instagram_record(crawling, tagging_count, percentage)
 

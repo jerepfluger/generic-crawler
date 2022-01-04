@@ -1,6 +1,6 @@
-from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import By
+from selenium.webdriver.support.wait import WebDriverWait
 
 from spiders.spider import Spider
 
@@ -18,12 +18,14 @@ class TwitterSpider(Spider):
         WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, '//a[@data-testid="loginButton"]')))
         login_button = driver.find_element_by_xpath('//a[@data-testid="loginButton"]')
         login_button.click()
-        WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, '//input[@autocomplete="username"]')))
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located((By.XPATH, '//input[@autocomplete="username"]')))
         username_input = driver.find_element_by_xpath('//input[@autocomplete="username"]')
         username_input.send_keys(crawling['data']['username'])
         username_input.submit()
 
-        WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, '//input[@autocomplete="current-password"]')))
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located((By.XPATH, '//input[@autocomplete="current-password"]')))
         password_input = driver.find_element_by_xpath('//input[@autocomplete="current-password"]')
         password_input.send_keys(crawling['data']['password'])
         password_input.submit()

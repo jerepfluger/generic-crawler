@@ -1,10 +1,9 @@
 from threading import Thread
 
 from flask import Flask, request
-from api import routes
 
 import helpers.config as config_global
-
+from api import routes
 
 app = Flask(__name__)
 app.register_blueprint(routes)
