@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 
 from exceptions.exceptions import NonExistentCombinationsException
+from repositories.instagram_crawling_repository import InstagramCrawlingRepository
 from request.response import Response, InstagramDetailedResponse
 from helpers.logger import logger
 from spiders.spider import Spider
@@ -13,8 +14,6 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import By
-
-INSTAGRAM_URL = "https://www.instagram.com/"
 
 emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '🥲', '☺️', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰',
           '😘', '😗', '😙', '😚', '😋', '😛']
@@ -75,6 +74,12 @@ def _takescreenshot(driver):
     logger.info('Screenshot saved in {}/{}'.format(route_to_folder, screenshot_time))
 
 
+def _save_instagram_record(crawling, tagging_count, percentage):
+    data = crawling['data']
+    InstagramCrawlingRepository().add_record(data['draw'], data['account_draw'], tagging_count, percentage,
+                                             data['tags_needed'], False, False)
+
+
 class InstagramSpider(Spider):
     def __init__(self, spider_name):
         super(InstagramSpider, self).__init__(spider_name)
@@ -82,7 +87,7 @@ class InstagramSpider(Spider):
     def process_task(self, crawling, web_driver_pool):
         driver = web_driver_pool.acquire(None, self._config.get('webdriver'))
         # Go to instagram website
-        driver.get(INSTAGRAM_URL)
+        driver.get(self._config.get('base_url'))
 
         # Waiting for login page to be fully loaded
         WebDriverWait(driver, 5).until(
@@ -98,7 +103,7 @@ class InstagramSpider(Spider):
         # Waiting for user to be fully logged in and redirecting to
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located((By.XPATH, self._config.get('html_location.user_avatar'))))
-        driver.get("{}{}".format(INSTAGRAM_URL, crawling['data']['desired_post']))
+        driver.get("{}{}".format(self._config.get('base_url'), crawling['data']['draw']))
 
         tagging_response = None
         if crawling['data']['needs_tagging']:
@@ -161,13 +166,13 @@ class InstagramSpider(Spider):
             try:
                 driver.find_element_by_xpath(self._config.get('html_location.blocked_banner'))
                 _takescreenshot(driver)
+                tagging_count = '{}/{}'.format(subset_count, len(combinations_array))
+                percentage = subset_count * 100 / len(combinations_array)
                 logger.error('Last element unable to be posted was -> {}'.format(subset))
-                logger.error('From a total of {}/{} and this represent the {} percentage'.format(subset_count,
-                                                                                                 len(combinations_array),
-                                                                                                 subset_count * 100 / len(
-                                                                                                     combinations_array)))
-                # Aca posiblemente podes hacer un sleep mas largo en caso de fallo y poner un timeout a los X reintentos
-                # Otra opcion sería hacer un skip de la cuenta que estamos por taggear, pero esa logica seria un poco mas rebuscada
+                logger.error('From a total of {} and this represent the {} percentage'.format(tagging_count, percentage))
+
+                _save_instagram_record(crawling, tagging_count, percentage)
+
                 return Response('Procedure ended up with ERRORS!', 429)
             except NoSuchElementException:
                 subset_count += 1
