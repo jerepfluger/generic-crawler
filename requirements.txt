@@ -6,3 +6,5 @@ psutil==5.4.2
 lru-dict==1.1.6
 ConcurrentLogHandler==0.9.1
 pylru==1.2.0
+sqlalchemy>=1.4.29
+mysqlclient>=2.1.0
