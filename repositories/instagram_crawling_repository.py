@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from base import Session, engine, Base
-from repositories.entities.instagram_crawling_entity import InstagramCrawling
+from repositories.entities.instagram_crawling import InstagramCrawling
 
 Base.metadata.create_all(engine)
 
