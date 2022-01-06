@@ -47,6 +47,8 @@ class Spider(metaclass=ABCMeta):
                                                                        crawling['search']['task_id'])
         logger.info('Starting crawling for {}'.format(name))
 
+        self.prepare_spider(crawling)
+
         spider_result = self.process_task(crawling, driver_pool)
 
         logger.info('Spider finish. {}'.format(spider_result))
@@ -115,3 +117,7 @@ class Spider(metaclass=ABCMeta):
             rnd_proxy = None
 
         return rnd_proxy
+
+    @abstractmethod
+    def prepare_spider(self, crawling):
+        pass

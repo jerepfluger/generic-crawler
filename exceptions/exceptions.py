@@ -36,3 +36,8 @@ class TimeoutProxyException(ProxyException):
 class NonExistentCombinationsException(Exception):
     def __init__(self, message):
         self.message = message
+
+
+class BannedSpiderException(Exception):
+    def __init__(self, spider_id):
+        self.message = 'Aborting crawling. Spider {} is banned'.format(spider_id)
