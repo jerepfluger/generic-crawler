@@ -1,4 +1,5 @@
-from sqlalchemy import Column, String, Integer, Boolean, Float, TIMESTAMP
+from sqlalchemy import Column, String, Integer, Boolean, Float, TIMESTAMP, ForeignKey
+
 from base import Base
 
 
@@ -7,7 +8,9 @@ class InstagramCrawling(Base):
 
     id = Column(Integer, primary_key=True)
     crawling_timestamp = Column(TIMESTAMP)
-    draw = Column(String)
+    spider_account_id = Column(Integer, ForeignKey('instagram_spider_accounts.id'))
+    draw_id = Column(String, ForeignKey('instagram_draws.id'))
+    tagging_accounts_group_id = Column(Integer, ForeignKey('instagram_tagging_accounts.group_id'))
     account_draw = Column(String)
     tagging_count = Column(String)
     tagging_percentage = Column(Float)
@@ -15,9 +18,12 @@ class InstagramCrawling(Base):
     followed = Column(Boolean)
     liked = Column(Boolean)
 
-    def __init__(self, crawling_timestamp, draw, account_draw, tagging_count, tagging_percentage, tags_needed, followed, liked):
+    def __init__(self, crawling_timestamp, spider_account, draw_id, tagging_accounts_group_id, account_draw,
+                 tagging_count, tagging_percentage, tags_needed, followed, liked):
         self.crawling_timestamp = crawling_timestamp
-        self.draw = draw
+        self.spider_account_id = spider_account
+        self.draw_id = draw_id
+        self.tagging_accounts_group_id = tagging_accounts_group_id
         self.account_draw = account_draw
         self.tagging_count = tagging_count
         self.tagging_percentage = tagging_percentage
