@@ -13,3 +13,6 @@ class InstagramDrawsRepository:
     def get_active_draws(self):
         now = datetime.now()
         return self.session.query(InstagramDraws).filter(InstagramDraws.expiry_date > now).all()
+
+    def close_session(self):
+        self.session.close()

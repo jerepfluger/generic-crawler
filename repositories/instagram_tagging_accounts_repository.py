@@ -37,3 +37,7 @@ class InstagramTaggingAccountsRepository:
         self.session.query(InstagramTaggingAccounts) \
             .filter(InstagramTaggingAccounts.group_id == group_id) \
             .update({InstagramTaggingAccounts.last_used: timestamp})
+        self.session.commit()
+
+    def close_session(self):
+        self.session.close()

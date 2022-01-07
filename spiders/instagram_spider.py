@@ -35,24 +35,35 @@ def _create_combinations(tags, tags_amount):
 
 
 def _query_instagram_spider_accounts(crawling):
+    instagram_spider_accounts = InstagramSpiderAccountsRepository()
+    spider_account = None
     try:
         spider_account_id = crawling['data']['spider_account_id']
-        spider_account = InstagramSpiderAccountsRepository().get_specific_spider_account(spider_account_id)
+        spider_account = instagram_spider_accounts.get_specific_spider_account(spider_account_id)
         if spider_account.is_banned:
             raise BannedSpiderException(spider_account.id)
     except KeyError:
         logger.info('Returning least used spider account since desired spider doesn\'t exists or it\'s banned')
-        return InstagramSpiderAccountsRepository().get_least_used_active_spider_account()
+        spider_account = instagram_spider_accounts.get_least_used_active_spider_account()
+    instagram_spider_accounts.close_session()
+
+    return spider_account
 
 
 def _get_random_active_draw():
-    active_draws = InstagramDrawsRepository().get_active_draws()
+    instagram_draws_repository = InstagramDrawsRepository()
+    active_draws = instagram_draws_repository.get_active_draws()
+    instagram_draws_repository.close_session()
 
     return active_draws[random.randint(0, len(active_draws) - 1)]
 
 
 def _get_random_active_tagging_group():
-    return InstagramTaggingAccountsRepository().get_least_used_tagging_account_group()
+    instagram_tagging_accounts = InstagramTaggingAccountsRepository()
+    least_used_tagging_account_group = instagram_tagging_accounts.get_least_used_tagging_account_group()
+    instagram_tagging_accounts.close_session()
+
+    return least_used_tagging_account_group
 
 
 class InstagramSpider(Spider):
@@ -230,6 +241,9 @@ class InstagramSpider(Spider):
 
     def _save_instagram_record(self, tagging_count, percentage):
         logger.info('Saving crawling result into InstagramCrawling table')
-        InstagramCrawlingRepository() \
+        instagram_crawling_repository = InstagramCrawlingRepository()
+        instagram_crawling_repository \
             .add_record(self.spider_account.id, self.draw.id, self.tagging_accounts.group_id, tagging_count, percentage,
                         self.draw.tags_needed, self.following, self.liked)
+
+        instagram_crawling_repository.close_session()

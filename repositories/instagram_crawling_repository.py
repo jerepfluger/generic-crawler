@@ -17,4 +17,6 @@ class InstagramCrawlingRepository:
                                                tagging_count, tagging_percentage, tags_needed, followed, liked)
         self.session.add(instagram_crawling)
         self.session.commit()
+
+    def close_session(self):
         self.session.close()
