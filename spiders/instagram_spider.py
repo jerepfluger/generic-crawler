@@ -1,8 +1,5 @@
-import os
 import random
 import time
-from datetime import datetime
-from pathlib import Path
 
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as EC
@@ -44,10 +41,8 @@ def _query_instagram_spider_accounts(crawling):
         if spider_account.is_banned:
             raise BannedSpiderException(spider_account.id)
     except KeyError:
-        spider_accounts = InstagramSpiderAccountsRepository().get_active_spider_accounts()
-        logger.info('Returning a random spider account since desired spiderdoesn\'t exists or it\'s banned')
-
-        return spider_accounts[random.randint(0, len(spider_accounts) - 1)]
+        logger.info('Returning least used spider account since desired spider doesn\'t exists or it\'s banned')
+        return InstagramSpiderAccountsRepository().get_least_used_active_spider_account()
 
 
 def _get_random_active_draw():
@@ -57,9 +52,7 @@ def _get_random_active_draw():
 
 
 def _get_random_active_tagging_group():
-    tagging_groups = InstagramTaggingAccountsRepository().get_tagging_accounts_groups()
-
-    return tagging_groups[random.randint(0, len(tagging_groups) - 1)]
+    return InstagramTaggingAccountsRepository().get_least_used_tagging_account_group()
 
 
 class InstagramSpider(Spider):

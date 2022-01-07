@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer
+from sqlalchemy import Column, Integer, TIMESTAMP
 
 from base import Base
 
@@ -9,3 +9,4 @@ class InstagramTaggingAccounts(Base):
     id = Column(Integer, primary_key=True)
     group_id = Column(Integer)
     account = Column(Integer)
+    last_used = Column(TIMESTAMP)

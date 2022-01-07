@@ -1,4 +1,6 @@
-from sqlalchemy import func
+from datetime import datetime
+
+from sqlalchemy import asc, func
 
 from base import Session, engine, Base
 from repositories.entities.instagram_tagging_accounts import InstagramTaggingAccounts
@@ -10,7 +12,28 @@ class InstagramTaggingAccountsRepository:
     def __init__(self):
         self.session = Session()
 
+    def get_least_used_tagging_account_group(self):
+        least_used_group = self._get_least_used_group_id()
+        self._update_last_used_timestamp_selected_tagging_accounts(least_used_group.group_id)
+
+        return self.session.query(InstagramTaggingAccounts.group_id,
+                                  func.group_concat(InstagramTaggingAccounts.account)) \
+            .filter(InstagramTaggingAccounts.group_id == least_used_group.group_id) \
+            .group_by(InstagramTaggingAccounts.group_id) \
+            .one()
+
     def get_tagging_accounts_groups(self):
         return self.session.query(InstagramTaggingAccounts.group_id,
                                   func.group_concat(InstagramTaggingAccounts.account)) \
             .group_by(InstagramTaggingAccounts.group_id).all()
+
+    def _get_least_used_group_id(self):
+        return self.session.query(InstagramTaggingAccounts) \
+            .order_by(asc(InstagramTaggingAccounts.last_used)) \
+            .one()
+
+    def _update_last_used_timestamp_selected_tagging_accounts(self, group_id):
+        timestamp = datetime.now().strftime('%Y:%m:%d %H:%m:%S')
+        self.session.query(InstagramTaggingAccounts) \
+            .filter(InstagramTaggingAccounts.group_id == group_id) \
+            .update({InstagramTaggingAccounts.last_used: timestamp})
