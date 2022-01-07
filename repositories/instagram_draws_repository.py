@@ -1,5 +1,8 @@
 from datetime import datetime
 
+from sqlalchemy import and_
+from sqlalchemy.sql.expression import false
+
 from base import Session, engine, Base
 from repositories.entities.instagram_draws import InstagramDraws
 
@@ -12,7 +15,10 @@ class InstagramDrawsRepository:
 
     def get_active_draws(self):
         now = datetime.now()
-        return self.session.query(InstagramDraws).filter(InstagramDraws.expiry_date > now).all()
-
-    def close_session(self):
-        self.session.close()
+        return self.session.query(InstagramDraws) \
+            .filter(
+            and_(
+                InstagramDraws.expiry_date > now,
+                InstagramDraws.expired == false()
+            )) \
+            .all()

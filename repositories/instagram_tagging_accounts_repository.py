@@ -30,14 +30,12 @@ class InstagramTaggingAccountsRepository:
     def _get_least_used_group_id(self):
         return self.session.query(InstagramTaggingAccounts) \
             .order_by(asc(InstagramTaggingAccounts.last_used)) \
-            .one()
+            .first()
 
     def _update_last_used_timestamp_selected_tagging_accounts(self, group_id):
         timestamp = datetime.now().strftime('%Y:%m:%d %H:%m:%S')
         self.session.query(InstagramTaggingAccounts) \
             .filter(InstagramTaggingAccounts.group_id == group_id) \
             .update({InstagramTaggingAccounts.last_used: timestamp})
-        self.session.commit()
 
-    def close_session(self):
-        self.session.close()
+        self.session.commit()
