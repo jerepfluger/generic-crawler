@@ -1,9 +1,9 @@
 # coding=utf-8
-import datetime
 import gzip
 import os
 import sys
 from abc import ABCMeta, abstractmethod
+from datetime import datetime
 
 from pyhocon import ConfigFactory
 from selenium.webdriver.remote.remote_connection import LOGGER
@@ -18,6 +18,14 @@ LOGGER.setLevel(30)
 ENDIANNESS = sys.byteorder  # this should be a global or class variable to avoid a syscall for every random
 
 
+def _check_and_create_dir(base_path):
+    try:
+        os.makedirs(base_path)
+    except OSError:
+        if not os.path.isdir(base_path):
+            raise
+
+
 class Spider(metaclass=ABCMeta):
 
     @staticmethod
@@ -29,6 +37,7 @@ class Spider(metaclass=ABCMeta):
         self.__data_base_path = self.__config.get_string('data-base-path')
         self._max_retry_task = self.__config.get_int('max-retry-task', 1)
         self._proxy_list = []
+        self.spider_name = spider_name
         self.stopped = False
         self.url_base = None
         create_dir_if_not_exists(self.__data_base_path)
@@ -47,7 +56,9 @@ class Spider(metaclass=ABCMeta):
                                                                        crawling['search']['task_id'])
         logger.info('Starting crawling for {}'.format(name))
 
+        logger.info('Preparing crawling pre-processing')
         self.prepare_spider(crawling)
+        logger.info('Crawling pre-processing successfully finished')
 
         spider_result = self.process_task(crawling, driver_pool)
 
@@ -64,9 +75,9 @@ class Spider(metaclass=ABCMeta):
     def _config(self):
         return self.__config
 
-    def _data_base_path(self, schedule_id, task_id):
+    def _data_base_path(self):
         today = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
-        return os.path.join(self.__data_base_path, today, str(schedule_id), str(task_id))
+        return os.path.join(self.__data_base_path, self.spider_name, today)
 
     @staticmethod
     def _load_config(spider_name):
@@ -77,23 +88,37 @@ class Spider(metaclass=ABCMeta):
                                         ConfigFactory.from_dict({})) \
             .with_fallback(crawling_conf)
 
-    def check_and_create_dir(self, base_path):
-        try:
-            os.makedirs(base_path)
-        except OSError:
-            if not os.path.isdir(base_path):
-                raise
+    def save_html(self, content, file_info, extension="html"):
+        """file_info is meant to be an array containing:
+            hour:
+                HH:mm:ss the crashed occurred
+            other:
+                All extra information user wants to clarify that helps to identify the file
+        """
+        base_path = self._data_base_path()
+        _check_and_create_dir(base_path)
 
-    def save_html(self, dest_id, schedule_id, task_id, content, extension="html", page_number=0):
-        base_path = self._data_base_path(schedule_id, task_id)
-        self.check_and_create_dir(base_path)
-
-        filename = '{}_page_{}.{}.gz'.format(str(dest_id), str(page_number), extension)
+        save_html_time = datetime.now().strftime('%H:%m:%S')
+        filename = '{}-{}.{}.gz'.format(save_html_time, '-'.join(file_info), extension)
         file_path = os.path.join(base_path, filename)
         with gzip.open(file_path, 'wb') as f:
             f.write(content)
+        logger.info('Html content successfully saved')
 
         return file_path
+
+    def take_screenshot(self, driver, screenshot_reason):
+        base_path = os.path.join(self.__config.get_string('screenshot.base-path'), self.spider_name)
+        _check_and_create_dir(base_path)
+
+        screenshot_time = datetime.now().strftime('%H:%m:%S')
+        screenshot_path = '{}/{}-{}.png'.format(base_path, screenshot_time, screenshot_reason)
+        try:
+            driver.save_screenshot(screenshot_path)
+        except Exception:
+            logger.error('Unable to take screenshot. Won\'t raise an error because of this. Just log it')
+
+        logger.info('Screenshot saved in %s', screenshot_path)
 
     def select_driver(self, crawling, web_driver_pool):
         rnd_proxy = Spider._get_random_proxy(crawling)

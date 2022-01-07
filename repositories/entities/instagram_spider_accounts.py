@@ -9,4 +9,5 @@ class InstagramSpiderAccounts(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String)
     password = Column(String)
+    last_used = Column(String)
     is_banned = Column(Boolean)
