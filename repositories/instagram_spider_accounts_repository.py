@@ -30,8 +30,9 @@ class InstagramSpiderAccountsRepository:
 
     def update_spider_last_used(self, spider_id):
         timestamp = datetime.now().strftime('%Y:%m:%d %H:%m:%S')
-        self.session.query(InstagramSpiderAccounts).filter(InstagramSpiderAccounts.id == spider_id).update(
-            {InstagramSpiderAccounts.last_used: timestamp})
+        self.session.query(InstagramSpiderAccounts).filter(InstagramSpiderAccounts.id == spider_id)\
+            .update({InstagramSpiderAccounts.last_used: timestamp})
+        self.session.commit()
 
     def close_session(self):
         self.session.close()
