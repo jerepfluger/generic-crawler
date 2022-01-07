@@ -37,15 +37,6 @@ def _create_combinations(tags, tags_amount):
     raise NonExistentCombinationsException('There\'s no algorithm created for {} tags combinatory'.format(tags_amount))
 
 
-def _take_screenshot(driver):
-    route_to_folder = '{}/{}'.format(Path.home(), 'Repos/python/generic-crawler/screenshots/')
-    screenshot_time = datetime.now().strftime("%Y:%m:%d %H:%m:%S")
-    if not os.path.exists(route_to_folder):
-        os.mkdir(route_to_folder)
-    driver.save_screenshot('{}/screenshot-{}.png'.format(route_to_folder, screenshot_time))
-    logger.info('Screenshot saved in %s/%s', route_to_folder, screenshot_time)
-
-
 def _query_instagram_spider_accounts(crawling):
     try:
         spider_account_id = crawling['data']['spider_account_id']
@@ -77,6 +68,8 @@ class InstagramSpider(Spider):
         self.draw = None
         self.spider_account = None
         self.tagging_accounts = None
+        self.tagging_count = None
+        self.tagging_percentage = None
         self.following = False
         self.liked = False
 
@@ -93,6 +86,7 @@ class InstagramSpider(Spider):
         # Waiting for login page to be fully loaded
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located((By.XPATH, self._config.get('html_location.username_input'))))
+        logger.info('Logging user %s', self.spider_account.username)
         self._login(driver)
 
         # Waiting for user to be fully logged in and redirecting to
@@ -105,7 +99,7 @@ class InstagramSpider(Spider):
             try:
                 tagging_response = self._tag_friends(driver)
             except Exception as ex:
-                _take_screenshot(driver)
+                self.take_screenshot(driver, 'unexpected_exception')
                 tagging_response = Response(str(ex), 500)
 
         follow_response = None
@@ -125,6 +119,7 @@ class InstagramSpider(Spider):
         if self.draw.needs_post_story:
             self._post_to_story(driver)
 
+        self._save_instagram_record(self.tagging_count, self.tagging_percentage)
         return InstagramDetailedResponse(tagging_response, follow_response, like_response, 200)
 
     def _login(self, driver):
@@ -171,29 +166,28 @@ class InstagramSpider(Spider):
 
             try:
                 driver.find_element_by_xpath(self._config.get('html_location.blocked_banner'))
-                _take_screenshot(driver)
-                tagging_count = '{}/{}'.format(subset_count, len(combinations_array))
-                percentage = subset_count * 100 / len(combinations_array)
+                self.take_screenshot(driver, 'blocked_banner')
                 logger.error('Last element unable to be posted was -> %s', subset)
                 logger.error('From a total of %s and this represent the %s percentage', tagging_count, percentage)
-
-                self._save_instagram_record(tagging_count, percentage)
 
                 return Response('Procedure ended up with ERRORS!', 429)
             except NoSuchElementException:
                 subset_count += 1
                 logger.info('Successfully commented %s/%s with tags %s and message %s',
                             subset_count, len(combinations_array), subset, self.draw.message)
-                pass
+                # Waiting for comment to be published
+                WebDriverWait(driver, 5).until(
+                    EC.element_to_be_clickable((By.XPATH, self._config.get('html_location.text_area'))))
 
-            # Waiting for comment to be published
-            WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.XPATH, self._config.get('html_location.text_area'))))
-
-            if subset_count < 419:
                 time.sleep(40)
-            else:
-                logger.info('Already running for 5 hours. Seems comments enough by this time')
+            except Exception:
+                logger.error('An unexpected error occurred while tagging. Saving screenshot and html')
+                draw_info = 'drawId:{}%spiderId:{}'.format(self.draw.id, self.spider_account.id)
+                self.save_html(driver.page_source, [draw_info])
+                self.take_screenshot(driver, 'unexpected_exception')
+            finally:
+                self.tagging_count = '{}/{}'.format(subset_count, len(combinations_array))
+                self.tagging_percentage = subset_count * 100 / len(combinations_array)
 
     def _follow_account(self, driver):
         try:
@@ -242,6 +236,7 @@ class InstagramSpider(Spider):
         pass  # THIS OPTION IS NOT YET AVAILABLE!
 
     def _save_instagram_record(self, tagging_count, percentage):
+        logger.info('Saving crawling result into InstagramCrawling table')
         InstagramCrawlingRepository() \
             .add_record(self.spider_account.id, self.draw.id, self.tagging_accounts.group_id, tagging_count, percentage,
                         self.draw.tags_needed, self.following, self.liked)
