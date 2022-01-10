@@ -17,8 +17,7 @@ class InstagramSpiderAccountsRepository:
         spider_account = self.session.query(InstagramSpiderAccounts) \
             .filter(InstagramSpiderAccounts.is_banned == false()) \
             .order_by(asc(InstagramSpiderAccounts.last_used)) \
-            .one()
-        self.update_spider_last_used(spider_account.id)
+            .first()
 
         return spider_account
 
@@ -26,13 +25,11 @@ class InstagramSpiderAccountsRepository:
         return self.session.query(InstagramSpiderAccounts).filter(InstagramSpiderAccounts.is_banned == false()).all()
 
     def get_specific_spider_account(self, spider_account_id):
-        return self.session.query(InstagramSpiderAccounts).filter(InstagramSpiderAccounts.id == spider_account_id).all()
+        return self.session.query(InstagramSpiderAccounts).filter(InstagramSpiderAccounts.id == spider_account_id).first()
 
-    def update_spider_last_used(self, spider_id):
+    def update_spider_last_time_used(self, spider_id):
         timestamp = datetime.now().strftime('%Y:%m:%d %H:%m:%S')
-        self.session.query(InstagramSpiderAccounts).filter(InstagramSpiderAccounts.id == spider_id)\
+        self.session.query(InstagramSpiderAccounts).filter(InstagramSpiderAccounts.id == spider_id) \
             .update({InstagramSpiderAccounts.last_used: timestamp})
-        self.session.commit()
 
-    def close_session(self):
-        self.session.close()
+        self.session.commit()

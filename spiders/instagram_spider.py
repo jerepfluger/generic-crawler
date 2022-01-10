@@ -35,35 +35,24 @@ def _create_combinations(tags, tags_amount):
 
 
 def _query_instagram_spider_accounts(crawling):
-    instagram_spider_accounts = InstagramSpiderAccountsRepository()
-    spider_account = None
     try:
         spider_account_id = crawling['data']['spider_account_id']
-        spider_account = instagram_spider_accounts.get_specific_spider_account(spider_account_id)
+        spider_account = InstagramSpiderAccountsRepository().get_specific_spider_account(spider_account_id)
         if spider_account.is_banned:
             raise BannedSpiderException(spider_account.id)
     except KeyError:
         logger.info('Returning least used spider account since desired spider doesn\'t exists or it\'s banned')
-        spider_account = instagram_spider_accounts.get_least_used_active_spider_account()
-    instagram_spider_accounts.close_session()
-
-    return spider_account
+        return InstagramSpiderAccountsRepository().get_least_used_active_spider_account()
 
 
 def _get_random_active_draw():
-    instagram_draws_repository = InstagramDrawsRepository()
-    active_draws = instagram_draws_repository.get_active_draws()
-    instagram_draws_repository.close_session()
+    active_draws = InstagramDrawsRepository().get_active_draws()
 
     return active_draws[random.randint(0, len(active_draws) - 1)]
 
 
 def _get_random_active_tagging_group():
-    instagram_tagging_accounts = InstagramTaggingAccountsRepository()
-    least_used_tagging_account_group = instagram_tagging_accounts.get_least_used_tagging_account_group()
-    instagram_tagging_accounts.close_session()
-
-    return least_used_tagging_account_group
+    return InstagramTaggingAccountsRepository().get_least_used_tagging_account_group()
 
 
 class InstagramSpider(Spider):
@@ -104,6 +93,7 @@ class InstagramSpider(Spider):
                 tagging_response = self._tag_friends(driver)
             except Exception as ex:
                 self.take_screenshot(driver, 'unexpected_exception')
+                InstagramSpiderAccountsRepository().update_spider_last_time_used(self.spider_account.id)
                 tagging_response = Response(str(ex), 500)
 
         follow_response = None
@@ -172,9 +162,10 @@ class InstagramSpider(Spider):
                 driver.find_element_by_xpath(self._config.get('html_location.blocked_banner'))
                 self.take_screenshot(driver, 'blocked_banner')
                 logger.error('Last element unable to be posted was -> %s', subset)
-                logger.error('From a total of %s and this represent the %s percentage', tagging_count, percentage)
+                logger.error('From a total of %s and this represent the %s percentage',
+                             self.tagging_count, self.tagging_percentage)
 
-                return Response('Procedure ended up with ERRORS!', 429)
+                return Response('Tagging procedure ended up with ERRORS!', 429)
             except NoSuchElementException:
                 subset_count += 1
                 logger.info('Successfully commented %s/%s with tags %s and message %s',
@@ -183,15 +174,18 @@ class InstagramSpider(Spider):
                 WebDriverWait(driver, 5).until(
                     EC.element_to_be_clickable((By.XPATH, self._config.get('html_location.text_area'))))
 
-                time.sleep(40)
+                time.sleep(45.5)
             except Exception:
                 logger.error('An unexpected error occurred while tagging. Saving screenshot and html')
                 draw_info = 'drawId:{}%spiderId:{}'.format(self.draw.id, self.spider_account.id)
                 self.save_html(driver.page_source, [draw_info])
                 self.take_screenshot(driver, 'unexpected_exception')
+                return Response('Tagging procedure ended up with ERRORS!', 429)
             finally:
                 self.tagging_count = '{}/{}'.format(subset_count, len(combinations_array))
                 self.tagging_percentage = subset_count * 100 / len(combinations_array)
+
+        return Response('Successfully ended tagging procedure', 200)
 
     def _follow_account(self, driver):
         try:
@@ -206,7 +200,10 @@ class InstagramSpider(Spider):
                 logger.info('Already following account')
                 self.following = True
             except NoSuchElementException:
-                logger.error('Unable to locate Follow/Unfollow button. xpath seems to be corrupted')
+                message = 'Unable to locate Follow/Unfollow button. xpath seems to be corrupted'
+                logger.error(message)
+
+                return Response(message, 404)
 
         return Response('Successfully Following the account', 200)
 

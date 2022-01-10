@@ -76,7 +76,7 @@ class Spider(metaclass=ABCMeta):
         return self.__config
 
     def _data_base_path(self):
-        today = datetime.datetime.utcnow().date().strftime("%Y-%m-%d")
+        today = datetime.utcnow().date().strftime("%Y-%m-%d")
         return os.path.join(self.__data_base_path, self.spider_name, today)
 
     @staticmethod
@@ -108,7 +108,8 @@ class Spider(metaclass=ABCMeta):
         return file_path
 
     def take_screenshot(self, driver, screenshot_reason):
-        base_path = os.path.join(self.__config.get_string('screenshot.base-path'), self.spider_name)
+        today = datetime.utcnow().date().strftime("%Y-%m-%d")
+        base_path = os.path.join(self.__config.get_string('screenshot.base-path'), self.spider_name, today)
         _check_and_create_dir(base_path)
 
         screenshot_time = datetime.now().strftime('%H:%m:%S')
