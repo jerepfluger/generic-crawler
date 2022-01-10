@@ -198,7 +198,7 @@ class InstagramSpider(Spider):
     def _follow_accounts(self, driver):
         accounts_to_follow = self.draw.accounts_to_follow.replace('@', '').split(',')
         follow_status = [False] * len(accounts_to_follow)
-        # FIXME: Bug here!! we need to fix this asap. Need to add new xpath to unfollow_button
+
         for index, account in enumerate(accounts_to_follow):
             driver.get('{}{}/'.format(self._config.get('base_url'), account))
             try:
