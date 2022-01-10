@@ -43,7 +43,7 @@ CREATE MYSQL CORRESPONDING TABLES
 after we add a file with proper tables creation I will put the file location in here
 
 
-Firefox v66 on https://ftp.mozilla.org/pub/firefox/releases/66.0.3
+Firefox v66 on https://ftp.mozilla.org/pub/firefox/releases/66.0.3/
     - Mac installation is just straight forward
     - For linux installation steps to follow are this:
         sudo tar xjf ~/FirefoxSetup.tar.bz2 -C /opt/

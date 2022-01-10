@@ -55,6 +55,12 @@ def _get_random_active_tagging_group():
     return InstagramTaggingAccountsRepository().get_least_used_tagging_account_group()
 
 
+def _shorten_and_shuffle_combinations_array(combinations_array):
+    random.shuffle(combinations_array)
+
+    return combinations_array[:12]
+
+
 class InstagramSpider(Spider):
     def __init__(self, spider_name):
         super(InstagramSpider, self).__init__(spider_name)
@@ -96,19 +102,19 @@ class InstagramSpider(Spider):
                 InstagramSpiderAccountsRepository().update_spider_last_time_used(self.spider_account.id)
                 tagging_response = Response(str(ex), 500)
 
-        follow_response = None
-        if self.draw.needs_follow:
-            try:
-                follow_response = self._follow_account(driver)
-            except Exception as ex:
-                follow_response = Response(str(ex), 500)
-
         like_response = None
         if self.draw.needs_like:
             try:
                 like_response = self._like_post(driver)
             except Exception as ex:
                 like_response = Response(str(ex), 500)
+
+        follow_response = None
+        if self.draw.needs_follow:
+            try:
+                follow_response = self._follow_accounts(driver)
+            except Exception as ex:
+                follow_response = Response(str(ex), 500)
 
         if self.draw.needs_post_story:
             self._post_to_story(driver)
@@ -139,6 +145,10 @@ class InstagramSpider(Spider):
     def _tag_friends(self, driver):
         subset_count = 0
         combinations_array = _create_combinations(self.tagging_accounts[1].split(','), self.draw.tags_needed)
+        combinations_array = _shorten_and_shuffle_combinations_array(combinations_array)
+
+        # Once we got here, we need to update spider last time used so we renew them each time
+        InstagramSpiderAccountsRepository().update_spider_last_time_used(self.spider_account.id)
 
         for subset in combinations_array:
             comment_button = driver.find_element_by_xpath(self._config.get('html_location.comment_button'))
@@ -160,7 +170,7 @@ class InstagramSpider(Spider):
 
             try:
                 driver.find_element_by_xpath(self._config.get('html_location.blocked_banner'))
-                self.take_screenshot(driver, 'blocked_banner')
+                self._save_traces_into_computer(driver.page_source, 'blocked_banner')
                 logger.error('Last element unable to be posted was -> %s', subset)
                 logger.error('From a total of %s and this represent the %s percentage',
                              self.tagging_count, self.tagging_percentage)
@@ -177,9 +187,7 @@ class InstagramSpider(Spider):
                 time.sleep(45.5)
             except Exception:
                 logger.error('An unexpected error occurred while tagging. Saving screenshot and html')
-                draw_info = 'drawId:{}%spiderId:{}'.format(self.draw.id, self.spider_account.id)
-                self.save_html(driver.page_source, [draw_info])
-                self.take_screenshot(driver, 'unexpected_exception')
+                self._save_traces_into_computer(driver, 'unexpected_exception')
                 return Response('Tagging procedure ended up with ERRORS!', 429)
             finally:
                 self.tagging_count = '{}/{}'.format(subset_count, len(combinations_array))
@@ -187,25 +195,32 @@ class InstagramSpider(Spider):
 
         return Response('Successfully ended tagging procedure', 200)
 
-    def _follow_account(self, driver):
-        try:
-            follow_button = driver.find_element_by_xpath(self._config.get('html_location.follow_button'))
-            follow_button.click()
-            logger.info('Successfully Following the account')
-            self.following = True
-        except NoSuchElementException:
-            logger.info('Unable to locate Follow button. Searching if already following account')
+    def _follow_accounts(self, driver):
+        accounts_to_follow = self.draw.accounts_to_follow.replace('@', '').split(',')
+        follow_status = [False] * len(accounts_to_follow)
+        # FIXME: Bug here!! we need to fix this asap. Need to add new xpath to unfollow_button
+        for index, account in enumerate(accounts_to_follow):
+            driver.get('{}{}/'.format(self._config.get('base_url'), account))
             try:
-                driver.find_element_by_xpath(self._config.get('html_location.unfollow_button'))
-                logger.info('Already following account')
-                self.following = True
+                follow_button = driver.find_element_by_xpath(self._config.get('html_location.follow_button'))
+                follow_button.click()
+                logger.info('Successfully following account %s', account)
+                follow_status[index] = True
             except NoSuchElementException:
-                message = 'Unable to locate Follow/Unfollow button. xpath seems to be corrupted'
-                logger.error(message)
+                logger.info('Unable to locate Follow button. Searching if already following account')
+                try:
+                    driver.find_element_by_xpath(self._config.get('html_location.unfollow_button'))
+                    logger.info('Successfully following account %s', account)
+                    follow_status[index] = True
+                except NoSuchElementException:
+                    message = 'Unable to locate Follow/Unfollow button for account {}'.format(account)
+                    logger.error(message)
+                    pass
 
-                return Response(message, 404)
-
-        return Response('Successfully Following the account', 200)
+        self.following = all(follow_status)
+        return Response(
+            'Successfully Following all accounts' if self.following else 'Unable to follow some accounts',
+            200 if self.following else 429)
 
     def _like_post(self, driver):
         try:
@@ -244,3 +259,11 @@ class InstagramSpider(Spider):
                         self.draw.tags_needed, self.following, self.liked)
 
         instagram_crawling_repository.close_session()
+
+    def _save_html(self, html_content):
+        draw_info = 'drawId:{}.spiderId:{}'.format(self.draw.id, self.spider_account.id)
+        self.save_html(html_content, [draw_info])
+
+    def _save_traces_into_computer(self, driver, message):
+        self._save_html(driver.page_source)
+        self.take_screenshot(driver, message)
