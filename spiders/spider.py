@@ -1,5 +1,4 @@
 # coding=utf-8
-import gzip
 import os
 import sys
 from abc import ABCMeta, abstractmethod
@@ -88,7 +87,7 @@ class Spider(metaclass=ABCMeta):
                                         ConfigFactory.from_dict({})) \
             .with_fallback(crawling_conf)
 
-    def save_html(self, content, file_info, extension="html"):
+    def save_html(self, html_content, file_info, extension="html"):
         """file_info is meant to be an array containing:
             hour:
                 HH:mm:ss the crashed occurred
@@ -98,11 +97,11 @@ class Spider(metaclass=ABCMeta):
         base_path = self._data_base_path()
         _check_and_create_dir(base_path)
 
-        save_html_time = datetime.now().strftime('%H:%m:%S')
-        filename = '{}-{}.{}.gz'.format(save_html_time, '-'.join(file_info), extension)
+        save_html_time = datetime.now().strftime('%H.%M.%S')
+        filename = '{}-{}.{}'.format(save_html_time, '-'.join(file_info), extension)
         file_path = os.path.join(base_path, filename)
-        with gzip.open(file_path, 'wb') as f:
-            f.write(content)
+        with open(file_path, 'w') as f:
+            f.write(html_content)
         logger.info('Html content successfully saved')
 
         return file_path
@@ -112,7 +111,7 @@ class Spider(metaclass=ABCMeta):
         base_path = os.path.join(self.__config.get_string('screenshot.base-path'), self.spider_name, today)
         _check_and_create_dir(base_path)
 
-        screenshot_time = datetime.now().strftime('%H:%m:%S')
+        screenshot_time = datetime.now().strftime('%H.%M.%S')
         screenshot_path = '{}/{}-{}.png'.format(base_path, screenshot_time, screenshot_reason)
         try:
             driver.save_screenshot(screenshot_path)
