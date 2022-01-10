@@ -162,9 +162,10 @@ class InstagramSpider(Spider):
                 driver.find_element_by_xpath(self._config.get('html_location.blocked_banner'))
                 self.take_screenshot(driver, 'blocked_banner')
                 logger.error('Last element unable to be posted was -> %s', subset)
-                logger.error('From a total of %s and this represent the %s percentage', tagging_count, percentage)
+                logger.error('From a total of %s and this represent the %s percentage',
+                             self.tagging_count, self.tagging_percentage)
 
-                return Response('Procedure ended up with ERRORS!', 429)
+                return Response('Tagging procedure ended up with ERRORS!', 429)
             except NoSuchElementException:
                 subset_count += 1
                 logger.info('Successfully commented %s/%s with tags %s and message %s',
@@ -173,15 +174,18 @@ class InstagramSpider(Spider):
                 WebDriverWait(driver, 5).until(
                     EC.element_to_be_clickable((By.XPATH, self._config.get('html_location.text_area'))))
 
-                time.sleep(40)
+                time.sleep(45.5)
             except Exception:
                 logger.error('An unexpected error occurred while tagging. Saving screenshot and html')
                 draw_info = 'drawId:{}%spiderId:{}'.format(self.draw.id, self.spider_account.id)
                 self.save_html(driver.page_source, [draw_info])
                 self.take_screenshot(driver, 'unexpected_exception')
+                return Response('Tagging procedure ended up with ERRORS!', 429)
             finally:
                 self.tagging_count = '{}/{}'.format(subset_count, len(combinations_array))
                 self.tagging_percentage = subset_count * 100 / len(combinations_array)
+
+        return Response('Successfully ended tagging procedure', 200)
 
     def _follow_account(self, driver):
         try:
@@ -196,7 +200,10 @@ class InstagramSpider(Spider):
                 logger.info('Already following account')
                 self.following = True
             except NoSuchElementException:
-                logger.error('Unable to locate Follow/Unfollow button. xpath seems to be corrupted')
+                message = 'Unable to locate Follow/Unfollow button. xpath seems to be corrupted'
+                logger.error(message)
+
+                return Response(message, 404)
 
         return Response('Successfully Following the account', 200)
 
