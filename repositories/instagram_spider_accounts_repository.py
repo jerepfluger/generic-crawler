@@ -25,7 +25,7 @@ class InstagramSpiderAccountsRepository:
         return self.session.query(InstagramSpiderAccounts).filter(InstagramSpiderAccounts.is_banned == false()).all()
 
     def get_specific_spider_account(self, spider_account_id):
-        return self.session.query(InstagramSpiderAccounts).filter(InstagramSpiderAccounts.id == spider_account_id).all()
+        return self.session.query(InstagramSpiderAccounts).filter(InstagramSpiderAccounts.id == spider_account_id).first()
 
     def update_spider_last_time_used(self, spider_id):
         timestamp = datetime.now().strftime('%Y:%m:%d %H:%m:%S')
