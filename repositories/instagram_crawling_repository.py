@@ -18,5 +18,10 @@ class InstagramCrawlingRepository:
         self.session.add(instagram_crawling)
         self.session.commit()
 
+    def get_crawling_by_draw_id(self, draw_id):
+        self.session.query(InstagramCrawling) \
+            .filter(InstagramCrawling.draw_id == draw_id) \
+            .all()
+
     def close_session(self):
         self.session.close()
