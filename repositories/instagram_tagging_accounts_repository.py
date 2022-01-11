@@ -31,7 +31,7 @@ class InstagramTaggingAccountsRepository:
             .order_by(asc(InstagramTaggingAccounts.last_used)) \
             .first()
 
-    def update_last_used_timestamp_selected_tagging_accounts(self, group_id):
+    def update_selected_tagging_accounts_last_time_used(self, group_id):
         timestamp = datetime.now().strftime('%Y:%m:%d %H:%m:%S')
         self.session.query(InstagramTaggingAccounts) \
             .filter(InstagramTaggingAccounts.group_id == group_id) \

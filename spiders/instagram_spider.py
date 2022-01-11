@@ -258,6 +258,6 @@ class InstagramSpider(Spider):
     def _update_selected_tagging_accounts_last_time_used(self):
         instagram_tagging_accounts_repository = InstagramTaggingAccountsRepository()
         instagram_tagging_accounts_repository \
-            .update_last_used_timestamp_selected_tagging_accounts(self.tagging_accounts.group_id)
+            .update_selected_tagging_accounts_last_time_used(self.tagging_accounts.group_id)
 
         return instagram_tagging_accounts_repository
