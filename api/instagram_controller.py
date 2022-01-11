@@ -23,7 +23,7 @@ def basic_instagram_crawler():
     try:
         result = spider.start(crawling_data, instagram_webdriver)
     except Exception as ex:
-        result = EntityResponse(str(ex), 500)
+        result = EntityResponse(ex.message if hasattr(ex, 'message') else ex, 500)
     finally:
         spider.stop()
         return FlaskResponse(json.dumps(result, default=lambda o: o.__dict__), status=result.status,

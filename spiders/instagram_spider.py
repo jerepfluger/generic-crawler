@@ -6,32 +6,16 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import By
 from selenium.webdriver.support.wait import WebDriverWait
 
-from exceptions.exceptions import NonExistentCombinationsException, BannedSpiderException
-from helpers.algorithms.instagram_combinatory import two_tags_combination, three_tags_combination, \
-    five_tags_combination
+from exceptions.exceptions import BannedSpiderException, NoneActiveDrawsException
+from helpers.algorithms.instagram_combinatory import create_tags_combinations
 from helpers.logger import logger
 from repositories.instagram_crawling_repository import InstagramCrawlingRepository
 from repositories.instagram_draws_repository import InstagramDrawsRepository
 from repositories.instagram_spider_accounts_repository import InstagramSpiderAccountsRepository
 from repositories.instagram_tagging_accounts_repository import InstagramTaggingAccountsRepository
+from repositories.session_decorator import close_session
 from request.response import Response, InstagramDetailedResponse
 from spiders.spider import Spider
-
-emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '🥲', '☺️', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰',
-          '😘', '😗', '😙', '😚', '😋', '😛']
-
-
-def _create_combinations(tags, tags_amount):
-    if tags_amount == 1:
-        return tags
-    if tags_amount == 2:
-        return two_tags_combination(tags)
-    if tags_amount == 3:
-        return three_tags_combination(tags)
-    if tags_amount == 5:
-        return five_tags_combination(tags)
-
-    raise NonExistentCombinationsException('There\'s no algorithm created for {} tags combinatory'.format(tags_amount))
 
 
 def _query_instagram_spider_accounts(crawling):
@@ -47,18 +31,10 @@ def _query_instagram_spider_accounts(crawling):
 
 def _get_random_active_draw():
     active_draws = InstagramDrawsRepository().get_active_draws()
+    if len(active_draws) == 0:
+        raise NoneActiveDrawsException()
 
     return active_draws[random.randint(0, len(active_draws) - 1)]
-
-
-def _get_random_active_tagging_group():
-    return InstagramTaggingAccountsRepository().get_least_used_tagging_account_group()
-
-
-def _shorten_and_shuffle_combinations_array(combinations_array):
-    random.shuffle(combinations_array)
-
-    return combinations_array[:12]
 
 
 class InstagramSpider(Spider):
@@ -75,7 +51,7 @@ class InstagramSpider(Spider):
     def prepare_spider(self, crawling):
         self.draw = _get_random_active_draw()
         self.spider_account = _query_instagram_spider_accounts(crawling)
-        self.tagging_accounts = _get_random_active_tagging_group()
+        self.tagging_accounts = InstagramTaggingAccountsRepository().get_least_used_tagging_account_group()
 
     def process_task(self, crawling, web_driver_pool):
         driver = web_driver_pool.acquire(None, self._config.get('webdriver'))
@@ -92,6 +68,8 @@ class InstagramSpider(Spider):
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located((By.XPATH, self._config.get('html_location.user_avatar'))))
         driver.get("{}{}".format(self._config.get('base_url'), self.draw.draw_url))
+        logger.info('Participating in draw %s of account %s with deadline %s',
+                    self.draw.draw_url, self.draw.draw_account, self.draw.expiry_date)
 
         tagging_response = None
         if self.draw.needs_tagging:
@@ -99,7 +77,9 @@ class InstagramSpider(Spider):
                 tagging_response = self._tag_friends(driver)
             except Exception as ex:
                 self.take_screenshot(driver, 'unexpected_exception')
-                InstagramSpiderAccountsRepository().update_spider_last_time_used(self.spider_account.id)
+                self._update_spider_last_time_used()
+                self._update_selected_tagging_accounts_last_time_used()
+
                 tagging_response = Response(str(ex), 500)
 
         like_response = None
@@ -144,11 +124,11 @@ class InstagramSpider(Spider):
 
     def _tag_friends(self, driver):
         subset_count = 0
-        combinations_array = _create_combinations(self.tagging_accounts[1].split(','), self.draw.tags_needed)
-        combinations_array = _shorten_and_shuffle_combinations_array(combinations_array)
+        combinations_array = create_tags_combinations(self.tagging_accounts[1].split(','), self.draw.tags_needed)
 
-        # Once we got here, we need to update spider last time used so we renew them each time
-        InstagramSpiderAccountsRepository().update_spider_last_time_used(self.spider_account.id)
+        # Once we got here, we need to update spider_account and tagging_group last time used so we renew them each time
+        self._update_spider_last_time_used()
+        self._update_selected_tagging_accounts_last_time_used()
 
         for subset in combinations_array:
             comment_button = driver.find_element_by_xpath(self._config.get('html_location.comment_button'))
@@ -161,8 +141,6 @@ class InstagramSpider(Spider):
 
             if self.draw.needs_message:
                 comment_area.send_keys(self.draw.message)
-            elif self._config.get('webdriver') != 'chromium':
-                comment_area.send_keys(random.choice(emojis))
 
             post_button = driver.find_element_by_xpath(self._config.get('html_location.submit_button'))
             post_button.click()
@@ -172,7 +150,7 @@ class InstagramSpider(Spider):
                 driver.find_element_by_xpath(self._config.get('html_location.blocked_banner'))
                 self._save_traces_into_computer(driver.page_source, 'blocked_banner')
                 logger.error('Last element unable to be posted was -> %s', subset)
-                logger.error('From a total of %s and this represent the %s percentage',
+                logger.error('Total number of posted elements %s and %s posting percentage accuracy',
                              self.tagging_count, self.tagging_percentage)
 
                 return Response('Tagging procedure ended up with ERRORS!', 429)
@@ -207,19 +185,19 @@ class InstagramSpider(Spider):
                 logger.info('Successfully following account %s', account)
                 follow_status[index] = True
             except NoSuchElementException:
-                logger.info('Unable to locate Follow button. Searching if already following account')
+                logger.info('Unable to locate follow button. Searching if already following account')
                 try:
                     driver.find_element_by_xpath(self._config.get('html_location.unfollow_button'))
                     logger.info('Successfully following account %s', account)
                     follow_status[index] = True
                 except NoSuchElementException:
-                    message = 'Unable to locate Follow/Unfollow button for account {}'.format(account)
+                    message = 'Unable to locate follow/following button for account {}'.format(account)
                     logger.error(message)
                     pass
 
         self.following = all(follow_status)
         return Response(
-            'Successfully Following all accounts' if self.following else 'Unable to follow some accounts',
+            'Successfully following all accounts' if self.following else 'Unable to follow some accounts',
             200 if self.following else 429)
 
     def _like_post(self, driver):
@@ -238,7 +216,7 @@ class InstagramSpider(Spider):
                 logger.error("No idea what could be going on in here")
                 return Response('Unable to like post', 404)
         except NoSuchElementException:
-            logger.error('Unable to locate Like button')
+            logger.error('Unable to locate like button')
             return Response('Unable to like post', 404)
 
         return Response('Successfully liked post', 200)
@@ -251,15 +229,6 @@ class InstagramSpider(Spider):
 
         pass  # THIS OPTION IS NOT YET AVAILABLE!
 
-    def _save_instagram_record(self, tagging_count, percentage):
-        logger.info('Saving crawling result into InstagramCrawling table')
-        instagram_crawling_repository = InstagramCrawlingRepository()
-        instagram_crawling_repository \
-            .add_record(self.spider_account.id, self.draw.id, self.tagging_accounts.group_id, tagging_count, percentage,
-                        self.draw.tags_needed, self.following, self.liked)
-
-        instagram_crawling_repository.close_session()
-
     def _save_html(self, html_content):
         draw_info = 'drawId:{}.spiderId:{}'.format(self.draw.id, self.spider_account.id)
         self.save_html(html_content, [draw_info])
@@ -267,3 +236,28 @@ class InstagramSpider(Spider):
     def _save_traces_into_computer(self, driver, message):
         self._save_html(driver.page_source)
         self.take_screenshot(driver, message)
+
+    @close_session
+    def _save_instagram_record(self, tagging_count, percentage):
+        logger.info('Saving crawling result into InstagramCrawling table')
+        instagram_crawling_repository = InstagramCrawlingRepository()
+        instagram_crawling_repository \
+            .add_record(self.spider_account.id, self.draw.id, self.tagging_accounts.group_id, tagging_count, percentage,
+                        self.draw.tags_needed, self.following, self.liked)
+
+        return instagram_crawling_repository
+
+    @close_session
+    def _update_spider_last_time_used(self):
+        instagram_spider_accounts_repository = InstagramSpiderAccountsRepository()
+        instagram_spider_accounts_repository.update_spider_last_time_used(self.spider_account.id)
+
+        return instagram_spider_accounts_repository
+
+    @close_session
+    def _update_selected_tagging_accounts_last_time_used(self):
+        instagram_tagging_accounts_repository = InstagramTaggingAccountsRepository()
+        instagram_tagging_accounts_repository \
+            .update_selected_tagging_accounts_last_time_used(self.tagging_accounts.group_id)
+
+        return instagram_tagging_accounts_repository

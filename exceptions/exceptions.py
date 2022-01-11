@@ -41,3 +41,8 @@ class NonExistentCombinationsException(Exception):
 class BannedSpiderException(Exception):
     def __init__(self, spider_id):
         self.message = 'Aborting crawling. Spider {} is banned'.format(spider_id)
+
+
+class NoneActiveDrawsException(Exception):
+    def __init__(self):
+        self.message = 'There aren\'t any draws available'
