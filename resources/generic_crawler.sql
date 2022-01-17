@@ -50,15 +50,6 @@ create table if not exists generic_crawler.instagram_crawling(
     foreign key (tagging_group_id) references generic_crawler.instagram_tagging_accounts(group_id)
 );
 
-INSERT INTO generic_crawler.instagram_spider_accounts (id, username, password, email, last_used, is_banned) VALUES (1, 'jeritisfluffy', 'J3r3mia$123', 'jerepfluger@outlook.com', '2022-01-07 15:24:03', 1);
-INSERT INTO generic_crawler.instagram_spider_accounts (id, username, password, email, last_used, is_banned) VALUES (2, 'jeritisflufy', 'J3r3mia$123', 'jerepfluger@hotmail.com', '2022-01-07 15:24:03', 0);
-INSERT INTO generic_crawler.instagram_spider_accounts (id, username, password, email, last_used, is_banned) VALUES (3, 'jeritis_flufy', 'J3r3mia$123', 'instacrawl_1@hotmail.com', '2022-01-07 15:24:03', 0);
-INSERT INTO generic_crawler.instagram_spider_accounts (id, username, password, email, last_used, is_banned) VALUES (4, 'jeritis_fluffy', 'J3r3mia$123', 'jeritis_fluffy@hotmail.com', '2022-01-07 15:24:03', 0);
-INSERT INTO generic_crawler.instagram_spider_accounts (id, username, password, email, last_used, is_banned) VALUES (5, 'fluffyjeritis', 'J3r3mia$123', 'fluffyjeritis@hotmail.com', '2022-01-07 15:24:03', 0);
-INSERT INTO generic_crawler.instagram_spider_accounts (id, username, password, email, last_used, is_banned) VALUES (6, 'flufyjeritis', 'J3r3mia$123', 'flufyjeritis@hotmail.com', '2022-01-07 15:24:03', 0);
-INSERT INTO generic_crawler.instagram_spider_accounts (id, username, password, email, last_used, is_banned) VALUES (7, 'fluffy_jeritis', 'J3r3mia$123', 'fluffy_jeritis@hotmail.com', '2022-01-07 15:24:03', 0);
-INSERT INTO generic_crawler.instagram_spider_accounts (id, username, password, email, last_used, is_banned) VALUES (8, 'flufy_jeritis', 'J3r3mia$123', 'flufy_jeritis@hotmail.com', '2022-01-07 15:24:03', 0);
-
 INSERT INTO generic_crawler.instagram_draws (id, draw_url, draw_account, needs_tagging, tags_needed, needs_message, message, needs_post_story, needs_follow, needs_like, expiry_date, expired, won, extra_info) VALUES (3, '/p/CYJj9tzLZU2/', 'telefecordoba', 1, 3, 0, '', 0, 1, 1, '2022-01-01 18:00:00', 1, 0, null);
 INSERT INTO generic_crawler.instagram_draws (id, draw_url, draw_account, needs_tagging, tags_needed, needs_message, message, needs_post_story, needs_follow, needs_like, expiry_date, expired, won, extra_info) VALUES (2, '/p/CYHC-etM9gy/', '@ferniplast', 1, 1, 0, '', 0, 1, 1, '2022-01-03 18:00:00', 1, 0, null);
 INSERT INTO generic_crawler.instagram_draws (id, draw_url, draw_account, needs_tagging, tags_needed, needs_message, message, needs_post_story, needs_follow, needs_like, expiry_date, expired, won, extra_info) VALUES (1, '/p/CYDAro9s6Wv/', '@clin.oficial', 1, 3, 0, '', 0, 1, 1, '2022-01-04 19:00:00', 1, 0, null);
