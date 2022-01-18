@@ -14,16 +14,16 @@ from time import gmtime
 
 from cloghandler import ConcurrentRotatingFileHandler
 
-from helpers import config as config
+from config.config import settings
 
 
 def rotate_handler(formatter):
-    if config.conf.get_bool('log.rotate.enabled'):
-        path_file = config.conf.get_string('log.rotate.path_file')
+    if settings.log.rotate.enabled:
+        path_file = settings.log.rotate.path_file
         # Use an absolute path to prevent file rotation trouble.
         logfile = os.path.abspath(path_file)
-        max_size = config.conf.get_int('log.rotate.max_size')
-        backup_count = config.conf.get_int('log.rotate.backup_count')
+        max_size = settings.log.rotate.max_size
+        backup_count = settings.log.rotate.backup_count
         rh = ConcurrentRotatingFileHandler(logfile, "a", max_size, backup_count)
         rh.setFormatter(formatter)
         return rh
@@ -32,7 +32,7 @@ def rotate_handler(formatter):
 
 
 def console_handler(formatter):
-    if config.conf.get_bool('log.console.enabled'):
+    if settings.log.console.enabled:
         ch = logging.StreamHandler()
         ch.setFormatter(formatter)
         return ch
@@ -74,5 +74,4 @@ __extra = {'uow': uow,
            'x-request-id': str(uuid.uuid4())
            }
 
-logger = get_logger('Optimus Prime',
-                    config.conf.get_int('log.level'))
+logger = get_logger('Optimus Prime', settings.log.level)

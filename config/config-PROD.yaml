@@ -1,0 +1,39 @@
+api:
+  port: 9290
+context: cloudia
+
+crawling:
+  data_base_path: "/home/marulainc/data/bot/htmls"
+  max_retry: 3
+
+  screenshot:
+    quality: 50
+    base_path: "/home/marulainc/data/bot/screenshots"
+  dynaconf_merge: true
+
+log:
+  console:
+    enabled: false
+
+  rotate:
+    path_file: "/home/marulainc/data/logs/generic-crawler.log"
+
+  level: 40
+  dynaconf_merge: true
+
+web_driver:
+  chrome_binary: "/usr/bin/chromium-browser"
+  firefox_binary: "/usr/bin/firefox"
+
+  chromium:
+    cache_dir: "/home/marulainc/cache-dir"
+    data_path: "/home/marulainc/data-path"
+
+  firefox:
+    cache_dir: "/home/marulainc/firefox/cache-dir"
+
+  cache:
+    max_entries: 1
+    max_age:
+      seconds: 600
+  dynaconf_merge: true

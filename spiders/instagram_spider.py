@@ -54,20 +54,20 @@ class InstagramSpider(Spider):
         self.tagging_accounts = InstagramTaggingAccountsRepository().get_least_used_tagging_account_group()
 
     def process_task(self, crawling, web_driver_pool):
-        driver = web_driver_pool.acquire(None, self._config.get('webdriver'))
+        driver = web_driver_pool.acquire(None, self._config.webdriver)
         # Go to instagram website
-        driver.get(self._config.get('base_url'))
+        driver.get(self._config.base_url)
 
         # Waiting for login page to be fully loaded
         WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located((By.XPATH, self._config.get('html_location.username_input'))))
+            EC.visibility_of_element_located((By.XPATH, self._config.html_location.username_input)))
         logger.info('Logging user %s', self.spider_account.username)
         self._login(driver)
 
         # Waiting for user to be fully logged in and redirecting to
         WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located((By.XPATH, self._config.get('html_location.user_avatar'))))
-        driver.get("{}{}".format(self._config.get('base_url'), self.draw.draw_url))
+            EC.visibility_of_element_located((By.XPATH, self._config.html_location.user_avatar)))
+        driver.get("{}{}".format(self._config.base_url, self.draw.draw_url))
         logger.info('Participating in draw %s of account %s with deadline %s',
                     self.draw.draw_url, self.draw.draw_account, self.draw.expiry_date)
 
@@ -115,9 +115,9 @@ class InstagramSpider(Spider):
             pass
 
     def complete_login_data(self, driver):
-        username_input = driver.find_element_by_xpath(self._config.get('html_location.username_input'))
+        username_input = driver.find_element_by_xpath(self._config.html_location.username_input)
         username_input.send_keys(self.spider_account.username)
-        password_input = driver.find_element_by_xpath(self._config.get('html_location.password_input'))
+        password_input = driver.find_element_by_xpath(self._config.html_location.password_input)
         password_input.send_keys(self.spider_account.password)
 
         return password_input
@@ -131,9 +131,9 @@ class InstagramSpider(Spider):
         self._update_selected_tagging_accounts_last_time_used()
 
         for subset in combinations_array:
-            comment_button = driver.find_element_by_xpath(self._config.get('html_location.comment_button'))
+            comment_button = driver.find_element_by_xpath(self._config.html_location.comment_button)
             comment_button.click()
-            # driver.find_element_by_xpath(self._config.get('html_location.text_area')).click()
+            # driver.find_element_by_xpath(self._config.html_location.text_area).click()
             comment_area = driver.switch_to.active_element
             comment_area.send_keys(' '.join(subset))
             time.sleep(3)
@@ -142,12 +142,12 @@ class InstagramSpider(Spider):
             if self.draw.needs_message:
                 comment_area.send_keys(self.draw.message)
 
-            post_button = driver.find_element_by_xpath(self._config.get('html_location.submit_button'))
+            post_button = driver.find_element_by_xpath(self._config.html_location.submit_button)
             post_button.click()
             time.sleep(1.5)
 
             try:
-                driver.find_element_by_xpath(self._config.get('html_location.blocked_banner'))
+                driver.find_element_by_xpath(self._config.html_location.blocked_banner)
                 self._save_traces_into_computer(driver.page_source, 'blocked_banner')
                 logger.error('Last element unable to be posted was -> %s', subset)
                 logger.error('Total number of posted elements %s and %s posting percentage accuracy',
@@ -160,7 +160,7 @@ class InstagramSpider(Spider):
                             subset_count, len(combinations_array), subset, self.draw.message)
                 # Waiting for comment to be published
                 WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, self._config.get('html_location.text_area'))))
+                    EC.element_to_be_clickable((By.XPATH, self._config.html_location.text_area)))
 
                 time.sleep(45.5)
             except Exception:
@@ -178,16 +178,16 @@ class InstagramSpider(Spider):
         follow_status = [False] * len(accounts_to_follow)
 
         for index, account in enumerate(accounts_to_follow):
-            driver.get('{}{}/'.format(self._config.get('base_url'), account))
+            driver.get('{}{}/'.format(self._config.base_url, account))
             try:
-                follow_button = driver.find_element_by_xpath(self._config.get('html_location.follow_button'))
+                follow_button = driver.find_element_by_xpath(self._config.html_location.follow_button)
                 follow_button.click()
                 logger.info('Successfully following account %s', account)
                 follow_status[index] = True
             except NoSuchElementException:
                 logger.info('Unable to locate follow button. Searching if already following account')
                 try:
-                    driver.find_element_by_xpath(self._config.get('html_location.unfollow_button'))
+                    driver.find_element_by_xpath(self._config.html_location.unfollow_button)
                     logger.info('Successfully following account %s', account)
                     follow_status[index] = True
                 except NoSuchElementException:
@@ -202,10 +202,9 @@ class InstagramSpider(Spider):
 
     def _like_post(self, driver):
         try:
-            like_state = driver.find_element_by_xpath(self._config.get('html_location.like_state')).get_attribute(
-                'aria-label')
+            like_state = driver.find_element_by_xpath(self._config.html_location.like_state).get_attribute('aria-label')
             if like_state == 'Like' or like_state == 'Me gusta':
-                like_button = driver.find_element_by_xpath(self._config.get('html_location.like_button'))  # Like button
+                like_button = driver.find_element_by_xpath(self._config.html_location.like_button)  # Like button
                 like_button.click()
                 logger.info('Successfully liked the post')
                 self.liked = True
