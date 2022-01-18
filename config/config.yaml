@@ -4,12 +4,15 @@ web_driver:
   chrome_binary: "/Applications/Chromium.app/Contents/MacOS/Chromium"
   firefox_binary: "/Applications/Firefox.app/Contents/MacOS/firefox-bin"
 
-  chromium.cache_dir: "/tmp/chromium/cache-dir"
-  chromium.data_path: "/tmp/chromium/data-path"
-  firefox.cache_dir: "/tmp/firefox/cache-dir"
-
-  cache.max_entries: 20
-  cache.max_age.seconds: 600
+  chromium:
+    cache_dir: "/tmp/chromium/cache-dir"
+    data_path: "/tmp/chromium/data-path"
+  firefox:
+    cache_dir: "/tmp/firefox/cache-dir"
+  cache:
+    max_entries: 20
+    max_age:
+      seconds: 600
 
 
 crawling:
@@ -75,4 +78,5 @@ log:
   level: 10 # CRITICAL = 50, ERROR = 40, WARNING = 30, INFO = 20, DEBUG = 10
 
 
-dialect.enabled: true
+dialect:
+  enabled: true

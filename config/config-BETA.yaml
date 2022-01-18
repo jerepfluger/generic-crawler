@@ -24,11 +24,14 @@ web_driver:
   chrome_binary: "/usr/bin/chromium-browser"
   firefox_binary: "/usr/bin/firefox"
 
-  chromium.cache_dir: "/home/marulainc/cache-dir"
-  chromium.data_path: "/home/marulainc/data-path"
+  chromium:
+    cache_dir: "/home/marulainc/cache-dir"
+    data_path: "/home/marulainc/data-path"
 
-  firefox.cache_dir: "/home/marulainc/firefox/cache-dir"
+  firefox:
+    cache_dir: "/home/marulainc/firefox/cache-dir"
 
-  cache.max_entries: 1
-  cache.max_age.seconds: 600
+  cache:
+    max_entries: 1
+    max_age.seconds: 600
   dynaconf_merge: true

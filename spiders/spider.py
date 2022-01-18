@@ -4,11 +4,9 @@ import sys
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 
-from pyhocon import ConfigFactory
 from selenium.webdriver.remote.remote_connection import LOGGER
 
 from config.config import settings
-import helpers.config as config_provider
 from helpers.file_helper import create_dir_if_not_exists
 from helpers.logger import logger
 from helpers.measure_time import measure_time
@@ -34,8 +32,8 @@ class Spider(metaclass=ABCMeta):
 
     def __init__(self, spider_name):
         self.__config = settings.crawling[spider_name]
-        self.__data_base_path = self.__config.get_string('data-base-path')
-        self._max_retry_task = self.__config.get_int('max-retry-task', 1)
+        self.__data_base_path = self.__config.data_base_path
+        self._max_retry_task = self.__config.max_retry_task
         self._proxy_list = []
         self.spider_name = spider_name
         self.stopped = False
@@ -71,6 +69,10 @@ class Spider(metaclass=ABCMeta):
     def process_task(self, crawling, driver_pool):
         pass
 
+    @abstractmethod
+    def prepare_spider(self, crawling):
+        pass
+
     @property
     def _config(self):
         return self.__config
@@ -78,15 +80,6 @@ class Spider(metaclass=ABCMeta):
     def _data_base_path(self):
         today = datetime.utcnow().date().strftime("%Y-%m-%d")
         return os.path.join(self.__data_base_path, self.spider_name, today)
-
-    @staticmethod
-    def _load_config(spider_name):
-        # The config must be loaded again with `config_provider.load_config()` since the method `get_config`
-        # and `fallback` override `config_provider.conf` object
-        crawling_conf = config_provider.load_config()['crawling']
-        return crawling_conf.get_config(spider_name,
-                                        ConfigFactory.from_dict({})) \
-            .with_fallback(crawling_conf)
 
     def save_html(self, html_content, file_info, extension="html"):
         """file_info is meant to be an array containing:
@@ -109,7 +102,7 @@ class Spider(metaclass=ABCMeta):
 
     def take_screenshot(self, driver, screenshot_reason):
         today = datetime.utcnow().date().strftime("%Y-%m-%d")
-        base_path = os.path.join(self.__config.get_string('screenshot.base-path'), self.spider_name, today)
+        base_path = os.path.join(self.__config.screenshot.base_path, self.spider_name, today)
         _check_and_create_dir(base_path)
 
         screenshot_time = datetime.now().strftime('%H.%M.%S')
@@ -123,7 +116,7 @@ class Spider(metaclass=ABCMeta):
 
     def select_driver(self, crawling, web_driver_pool):
         rnd_proxy = Spider._get_random_proxy(crawling)
-        return rnd_proxy, web_driver_pool.acquire(rnd_proxy, self._config.get('webdriver'))
+        return rnd_proxy, web_driver_pool.acquire(rnd_proxy, self._config.webdriver)
 
     def init_proxy_list(self, crawling):
         if crawling['proxy']['enabled']:
@@ -143,7 +136,3 @@ class Spider(metaclass=ABCMeta):
             rnd_proxy = None
 
         return rnd_proxy
-
-    @abstractmethod
-    def prepare_spider(self, crawling):
-        pass

@@ -10,9 +10,7 @@ class TwitterSpider(Spider):
         super(TwitterSpider, self).__init__(spider_name)
 
     def process_task(self, crawling, web_driver_pool):
-        # proxy = self.get_proxy(crawling)
-
-        driver = web_driver_pool.acquire(None, self._config.get('webdriver'))
+        driver = web_driver_pool.acquire(None, self._config.webdriver)
         driver.get("http://www.twitter.com")
 
         WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, '//a[@data-testid="loginButton"]')))

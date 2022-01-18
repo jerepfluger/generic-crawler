@@ -5,7 +5,7 @@ from pylru import lrucache
 from selenium import webdriver
 from selenium.webdriver import ChromeOptions, FirefoxOptions
 
-from helpers import config as config_global
+from config.config import settings
 from helpers.logger import logger
 
 
@@ -14,13 +14,13 @@ class ChromeWebdriver:
     def create(config, proxy=None):
         logger.info("Creating Chromium Web Driver")
         options = ChromeOptions()
-        options.binary_location = config.get_string('chrome-binary')
+        options.binary_location = config.chrome_binary
         options.add_argument('headless')
         options.add_argument('hide-scrollbars')
         options.add_argument('disable-gpu')
         options.add_argument('no-sandbox')
-        options.add_argument('data-path={}'.format(config.get_string('chromium.data-path')))
-        options.add_argument('disk-cache-dir={}'.format(config.get_string('chromium.cache-dir')))
+        options.add_argument('data-path={}'.format(config.chromium.data_path))
+        options.add_argument('disk-cache-dir={}'.format(config.chromium.cache_dir))
         options.add_argument('disable-infobars')
         # Disable web security for get ember components via execute-scripts
         options.add_argument('disable-web-security')
@@ -37,7 +37,7 @@ class FirefoxWebdriver:
         logger.info("Creating Firefox Web Driver")
 
         options = FirefoxOptions()
-        options.binary_location = config.get_string('firefox-binary')
+        options.binary_location = config.firefox_binary
         options.add_argument('--headless')
         options.add_argument('--new_instance')
 
@@ -45,7 +45,7 @@ class FirefoxWebdriver:
         #  https://developer.mozilla.org/en-US/docs/Mozilla/Preferences/Mozilla_networking_preferences
         firefox_profile.set_preference('browser.cache.disk.enable', 'true')
         firefox_profile.set_preference('browser.cache.memory.enable', 'true')
-        firefox_profile.set_preference('browser.cache.disk.parent_directory', config.get_string('firefox.cache-dir'))
+        firefox_profile.set_preference('browser.cache.disk.parent_directory', config.firefox.cache_dir)
         # https://github.com/mozilla/geckodriver/issues/517#issuecomment-286701282
         firefox_profile.set_preference("browser.tabs.remote.autostart", "false")
         firefox_profile.set_preference("browser.tabs.remote.autostart.1", "false")
@@ -85,9 +85,9 @@ class WebDriver:
         'chromium': ChromeWebdriver.create
     }
 
-    def __init__(self, config=config_global.conf.get_config('web-driver')):
-        self.config = config
-        self.drivers = lrucache(self.config.get_int('cache.max-entries'), callback=self.on_eviction)
+    def __init__(self):
+        self.config = settings.web_driver
+        self.drivers = lrucache(self.config.cache.max_entries, callback=self.on_eviction)
         self.stopped = False
         self.last_time_used = datetime.now()
 
@@ -117,7 +117,7 @@ class WebDriver:
 
     def clear_if_not_used(self):
         delta = datetime.now() - self.last_time_used
-        if delta.total_seconds() > self.config.get_int('cache.max-age.seconds') and len(self.drivers) > 0:
+        if delta.total_seconds() > self.config.cache.max_age.seconds and len(self.drivers) > 0:
             [WebDriver.force_quit(driver) for k, driver in self.drivers.items()]
             self.drivers.clear()
 
