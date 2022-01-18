@@ -1,4 +1,5 @@
-api.port: 9290
+api:
+  port: 9290
 context: cloudia
 
 crawling:
@@ -33,5 +34,6 @@ web_driver:
 
   cache:
     max_entries: 1
-    max_age.seconds: 600
+    max_age:
+      seconds: 600
   dynaconf_merge: true

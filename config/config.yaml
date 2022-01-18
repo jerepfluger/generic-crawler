@@ -37,7 +37,6 @@ crawling:
     proxy: false
     webdriver: "chromium"
   instagram:
-    jere_var: ${JERE_VAR}
     data_base_path: "/tmp/htmls"
     max_retry_task: 3
     proxy: false
