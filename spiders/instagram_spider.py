@@ -1,11 +1,13 @@
 import random
 import time
+from os import environ as env
 
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import By
 from selenium.webdriver.support.wait import WebDriverWait
 
+from config.config import settings
 from exceptions.exceptions import BannedSpiderException, NoneActiveDrawsException
 from helpers.algorithms.instagram_combinatory import create_tags_combinations
 from helpers.logger import logger

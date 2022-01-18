@@ -7,6 +7,7 @@ from datetime import datetime
 from pyhocon import ConfigFactory
 from selenium.webdriver.remote.remote_connection import LOGGER
 
+from config.config import settings
 import helpers.config as config_provider
 from helpers.file_helper import create_dir_if_not_exists
 from helpers.logger import logger
@@ -32,7 +33,7 @@ class Spider(metaclass=ABCMeta):
         Spider.__stopped = True
 
     def __init__(self, spider_name):
-        self.__config = Spider._load_config(spider_name)
+        self.__config = settings.crawling[spider_name]
         self.__data_base_path = self.__config.get_string('data-base-path')
         self._max_retry_task = self.__config.get_int('max-retry-task', 1)
         self._proxy_list = []
