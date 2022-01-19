@@ -1,5 +1,6 @@
 import random
 import time
+from os import environ as env
 
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as EC
@@ -16,6 +17,10 @@ from repositories.instagram_tagging_accounts_repository import InstagramTaggingA
 from repositories.session_decorator import close_session
 from request.response import Response, InstagramDetailedResponse
 from spiders.spider import Spider
+
+SPIDER_USERNAME = 'SPIDER_{}_USERNAME'
+SPIDER_PASSWORD = 'SPIDER_{}_PASSWORD'
+SPIDER_EMAIL = 'SPIDER_{}_EMAIL'
 
 
 def _query_instagram_spider_accounts(crawling):
@@ -61,7 +66,7 @@ class InstagramSpider(Spider):
         # Waiting for login page to be fully loaded
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located((By.XPATH, self._config.html_location.username_input)))
-        logger.info('Logging user %s', self.spider_account.username)
+        logger.info('Logging user %s', env[SPIDER_USERNAME.format(self.spider_account.id)])
         self._login(driver)
 
         # Waiting for user to be fully logged in and redirecting to
@@ -116,9 +121,9 @@ class InstagramSpider(Spider):
 
     def complete_login_data(self, driver):
         username_input = driver.find_element_by_xpath(self._config.html_location.username_input)
-        username_input.send_keys(self.spider_account.username)
+        username_input.send_keys(env[SPIDER_USERNAME.format(self.spider_account.id)])
         password_input = driver.find_element_by_xpath(self._config.html_location.password_input)
-        password_input.send_keys(self.spider_account.password)
+        password_input.send_keys(env[SPIDER_PASSWORD.format(self.spider_account.id)])
 
         return password_input
 
