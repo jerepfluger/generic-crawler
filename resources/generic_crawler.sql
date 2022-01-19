@@ -27,9 +27,9 @@ create table if not exists generic_crawler.instagram_tagging_accounts(
 
 create table if not exists generic_crawler.instagram_spider_accounts(
     id smallint auto_increment primary key,
-    username varchar(15) not null,
-    password varchar(15) not null,
-    email varchar(30) not null,
+    -- username varchar(15) not null,
+    -- password varchar(15) not null,
+    -- email varchar(30) not null,
     last_used timestamp not null,
     is_banned bool default false
 );

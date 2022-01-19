@@ -1,18 +1,16 @@
+api:
+  name: "generic-crawler"
+  port: 9291
 context: "local"
 
-web_driver:
-  chrome_binary: "/Applications/Chromium.app/Contents/MacOS/Chromium"
-  firefox_binary: "/Applications/Firefox.app/Contents/MacOS/firefox-bin"
 
-  chromium:
-    cache_dir: "/tmp/chromium/cache-dir"
-    data_path: "/tmp/chromium/data-path"
-  firefox:
-    cache_dir: "/tmp/firefox/cache-dir"
-  cache:
-    max_entries: 20
-    max_age:
-      seconds: 600
+db:
+  engine: ${DB_ENGINE}
+  user: ${DB_USER}
+  password: ${DB_PASSWORD}
+  host: ${DB_HOST}
+  port: ${DB_PORT}
+  schema: ${DB_SCHEMA}
 
 
 crawling:
@@ -55,14 +53,6 @@ crawling:
       like_button: ".//span[@class='fr66n']/button[@class='wpO6b  ']"
       like_state: ".//span[@class='fr66n']//*[name()='svg']"
 
-api:
-  name: "generic-crawler"
-  port: 9291
-
-
-worker:
-  poll_interval: 60 # seconds
-
 
 log:
   rotate:
@@ -75,6 +65,21 @@ log:
     enabled: true
 
   level: 10 # CRITICAL = 50, ERROR = 40, WARNING = 30, INFO = 20, DEBUG = 10
+
+
+web_driver:
+  chrome_binary: "/Applications/Chromium.app/Contents/MacOS/Chromium"
+  firefox_binary: "/Applications/Firefox.app/Contents/MacOS/firefox-bin"
+
+  chromium:
+    cache_dir: "/tmp/chromium/cache-dir"
+    data_path: "/tmp/chromium/data-path"
+  firefox:
+    cache_dir: "/tmp/firefox/cache-dir"
+  cache:
+    max_entries: 20
+    max_age:
+      seconds: 600
 
 
 dialect:

@@ -2,6 +2,16 @@ api:
   port: 9290
 context: cloudia
 
+
+db:
+  engine: ${DB_ENGINE}
+  user: ${DB_USER}
+  password: ${DB_PASSWORD}
+  host: ${DB_HOST}
+  port: ${DB_PORT}
+  schema: ${DB_SCHEMA}
+
+
 crawling:
   data_base_path: "/home/marulainc/data/bot/htmls"
   max_retry: 3
@@ -10,6 +20,7 @@ crawling:
     quality: 50
     base_path: "/home/marulainc/data/bot/screenshots"
   dynaconf_merge: true
+
 
 log:
   console:
@@ -20,6 +31,7 @@ log:
 
   level: 40
   dynaconf_merge: true
+
 
 web_driver:
   chrome_binary: "/usr/bin/chromium-browser"

@@ -7,7 +7,8 @@ class InstagramSpiderAccounts(Base):
     __tablename__ = 'instagram_spider_accounts'
 
     id = Column(Integer, primary_key=True)
-    username = Column(String)
-    password = Column(String)
+    # username = Column(String)
+    # password = Column(String)
+    # email = Column(String)
     last_used = Column(String)
     is_banned = Column(Boolean)
