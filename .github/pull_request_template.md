@@ -7,6 +7,9 @@ Summary of the change. Please include relevant motivation and context. List any 
 - [ ] HotFix
 - [ ] Other
 
+## Related tickets
+[GC-](https://marulainc.atlassian.net/browse/GC-) ...description
+
 ## How Has This Been Tested?
 Describe the tests that you ran to verify your changes and provide instructions so we can reproduce it. Please also list any relevant details for your test configuration.
 
