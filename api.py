@@ -1,21 +1,20 @@
 from threading import Thread
 
 from flask import Flask, request
+
 from api import routes
-
-import helpers.config as config_global
-
+from config.config import settings
 
 app = Flask(__name__)
 app.register_blueprint(routes)
 
 
 class Api(Thread):
-    def __init__(self, config=config_global.conf):
+    def __init__(self):
         Thread.__init__(self)
-        self._config = config
-        self.name = config.get_string('api.name')
-        self._port = config.get_int('api.port')
+        self._config = settings
+        self.name = settings.api.name
+        self._port = settings.api.port
 
     def run(self):
         app.run(host='127.0.0.1', port=self._port)
